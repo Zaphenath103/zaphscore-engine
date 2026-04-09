@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 
-import httpx
+import aiohttp
 from fastapi import APIRouter, HTTPException
 
 from app.config import settings
@@ -39,24 +39,25 @@ async def get_repo_info(owner: str, repo: str) -> RepoInfo:
     """
     url = f"{GITHUB_API}/repos/{owner}/{repo}"
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.get(url, headers=_github_headers())
-
-    if resp.status_code == 404:
-        raise HTTPException(status_code=404, detail="Repository not found on GitHub")
-    if resp.status_code == 403:
-        raise HTTPException(
-            status_code=429,
-            detail="GitHub API rate limit exceeded. Configure GITHUB_TOKEN for higher limits.",
-        )
-    if resp.status_code != 200:
-        logger.error("GitHub API returned %d: %s", resp.status_code, resp.text[:200])
-        raise HTTPException(
-            status_code=502,
-            detail=f"GitHub API error: {resp.status_code}",
-        )
-
-    data = resp.json()
+    timeout = aiohttp.ClientTimeout(total=15)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers=_github_headers()) as resp:
+            status = resp.status
+            if status == 404:
+                raise HTTPException(status_code=404, detail="Repository not found on GitHub")
+            if status == 403:
+                raise HTTPException(
+                    status_code=429,
+                    detail="GitHub API rate limit exceeded. Configure GITHUB_TOKEN for higher limits.",
+                )
+            if status != 200:
+                text = await resp.text()
+                logger.error("GitHub API returned %d: %s", status, text[:200])
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"GitHub API error: {status}",
+                )
+            data = await resp.json()
 
     return RepoInfo(
         owner=data.get("owner", {}).get("login", owner),
