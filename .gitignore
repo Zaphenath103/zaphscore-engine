@@ -8,3 +8,8 @@ dist/
 build/
 .pytest_cache/
 tmp_repos/
+
+# SQLite local DB — use Postgres in production
+*.db
+*.db-shm
+*.db-wal
