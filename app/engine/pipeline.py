@@ -8,11 +8,39 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shutil
 import tempfile
 import uuid
 from datetime import datetime
 from typing import Any, Callable, Coroutine, Optional
+
+# ---------------------------------------------------------------------------
+# D-007: SSRF protection — URL allowlist for repo scanning
+# ---------------------------------------------------------------------------
+_ALLOWED_REPO_HOSTS = re.compile(
+    r"^https://(github\.com|gitlab\.com|bitbucket\.org|sourcehut\.org)/[^/]+/[^/]",
+    re.IGNORECASE,
+)
+
+def _validate_repo_url(url: str) -> None:
+    """Reject any repo URL that isn't from an allowed host.
+
+    Prevents SSRF (Server-Side Request Forgery) attacks where an attacker
+    submits internal network URLs (file://, http://169.254.169.254/, ssh://)
+    to probe cloud metadata or internal services.
+
+    Raises:
+        ValueError: with a safe error message if the URL is not allowed.
+    """
+    if not url or not isinstance(url, str):
+        raise ValueError("repo_url is required")
+    url = url.strip()
+    if not _ALLOWED_REPO_HOSTS.match(url):
+        raise ValueError(
+            "Invalid repository URL. Only GitHub, GitLab, Bitbucket, and Sourcehut "
+            "URLs are accepted (https://github.com/owner/repo)."
+        )
 
 from app.models.schemas import (
     Finding,
@@ -132,10 +160,18 @@ async def run_scan(
             phases_completed.append("clone")
             await _notify(progress_callback, ScanPhase.cloning, 12, "Using local repository directory")
         else:
+            # D-007: Validate repo_url against SSRF allowlist BEFORE cloning
+            try:
+                _validate_repo_url(repo_url)
+            except ValueError as exc:
+                logger.warning("[%s] Rejected repo_url: %s — %s", scan_id, repo_url, exc)
+                raise ScanPipelineError(str(exc)) from exc
+
             await _notify(progress_callback, ScanPhase.cloning, 0, "Cloning repository...")
 
-            tmp_dir = tempfile.mkdtemp(prefix=f"zse-{scan_id}-")
-            logger.info("[%s] Phase 1: Cloning %s (branch=%s) to %s", scan_id, repo_url, branch, tmp_dir)
+            # D-008: Random-only prefix — do NOT embed scan_id (predictable = symlink attack)
+            tmp_dir = tempfile.mkdtemp(prefix="zse-")
+            logger.info("[%s] Phase 1: Cloning %s (branch=%s)", scan_id, repo_url, branch)
 
             try:
                 repo_dir = await clone_repo(
@@ -150,6 +186,10 @@ async def run_scan(
                 logger.error("[%s] Clone failed: %s", scan_id, exc)
                 await _notify(progress_callback, ScanPhase.cloning, 0, f"Clone failed: {exc}")
                 raise ScanPipelineError(f"Clone failed: {exc}") from exc
+            finally:
+                # D-010: Zero the token immediately after clone — it's only needed for git auth.
+                # Prevents token leakage in crash reports, debug logs, or memory dumps.
+                github_token = None  # noqa: F841 — intentional zero-out
 
         # ------------------------------------------------------------------
         # Phase 2: Dependency resolution

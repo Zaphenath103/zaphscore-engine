@@ -1,0 +1,56 @@
+# D-032: GitHub Actions Auto-Deploy to Vercel
+# Fires on every push to main — eliminates the "silent push" problem where
+# code changes are committed but never reach production.
+#
+# Prerequisites (set in GitHub repo Settings → Secrets → Actions):
+#   VERCEL_TOKEN       — from Vercel dashboard → Account Settings → Tokens
+#   VERCEL_ORG_ID      — from .vercel/project.json or Vercel dashboard
+#   VERCEL_PROJECT_ID  — from .vercel/project.json or Vercel dashboard
+#
+# To get org/project IDs: run `vercel link` locally once, check .vercel/project.json
+
+name: Deploy to Vercel (Production)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # allow manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy ZSE → Vercel Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (Vercel CLI requires Node)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel env & project config
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build project
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Report deploy URL
+        run: echo "Deployed to zaphscore.zaphenath.app"

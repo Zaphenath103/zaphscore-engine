@@ -13,3 +13,5 @@ tmp_repos/
 *.db
 *.db-shm
 *.db-wal
+
+.vercel

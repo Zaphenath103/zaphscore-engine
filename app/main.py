@@ -12,9 +12,9 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
 from app.config import settings
 
@@ -113,22 +113,34 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Zaphenath Security Engine",
     description="Production-grade security scanning backend.",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
-# CORS
+# D-004: CORS — never send credentials=True with wildcard origin.
+# Per CORS spec: allow_credentials=True with allow_origins=["*"] is rejected by browsers
+# AND enables CSRF from any domain. Credentials only flow to explicit origins.
 _cors_origins = (
     ["*"] if settings.CORS_ORIGINS == "*"
     else [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 )
+_cors_credentials = _cors_origins != ["*"]  # False when wildcard — safe default
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=_cors_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
+
+# D-005: Rate limiting middleware — protects scan endpoints from DoS
+try:
+    from app.middleware.rate_limit import RateLimitMiddleware
+    app.add_middleware(RateLimitMiddleware)
+    logger.info("Rate limiting middleware loaded")
+except Exception as e:
+    logger.error("Rate limiting middleware failed to load: %s", e)
 
 # Mount routers — wrapped so a broken router never kills startup
 try:
@@ -143,10 +155,51 @@ try:
 except Exception as e:
     logger.error("Failed to load repos router: %s", e)
 
+try:
+    from app.api.waitlist import router as waitlist_router
+    app.include_router(waitlist_router)
+except Exception as e:
+    logger.error("Failed to load waitlist router: %s", e)
+
+try:
+    from app.api.webhook import router as webhook_router
+    app.include_router(webhook_router)
+    logger.info("Stripe webhook router loaded")
+except Exception as e:
+    logger.error("Failed to load webhook router: %s", e)
+
+
+# ---------------------------------------------------------------------------
+# 404 handler
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "not found", "path": str(request.url.path)},
+    )
+
 
 # ---------------------------------------------------------------------------
 # Health endpoints
 # ---------------------------------------------------------------------------
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    """Serve robots.txt — prevent API crawling."""
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n"
+        "Disallow: /admin/\n"
+        "Disallow: /docs\n"
+        "Disallow: /redoc\n"
+        "Disallow: /openapi.json\n"
+        "\n"
+        f"Sitemap: https://zaphscore.zaphenath.app/sitemap.xml\n"
+    )
+
 
 @app.get("/ping")
 async def ping():

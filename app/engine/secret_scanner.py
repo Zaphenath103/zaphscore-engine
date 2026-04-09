@@ -17,11 +17,15 @@ TRUFFLEHOG_TIMEOUT = 180  # seconds
 
 
 def _redact_secret(raw: str) -> str:
-    """Show first 4 characters, mask the rest."""
+    """D-009: Fully redact the secret — show ZERO characters of the actual value.
+
+    Showing even 4 chars (e.g. "ghp_", "AKIA") reveals the secret type and
+    confirms to an attacker exactly what was found. Detector name already
+    communicates the type without leaking credential data.
+    """
     if not raw:
-        return "***"
-    visible = min(4, len(raw))
-    return raw[:visible] + "*" * min(len(raw) - visible, 20)
+        return "[REDACTED]"
+    return "[REDACTED]"
 
 
 def _extract_detector_name(result: dict) -> str:
