@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from starlette.responses import StreamingResponse
 
 from app.models import database as db
@@ -61,8 +61,24 @@ def _check_rate_limit(client_ip: str) -> None:
 # POST /api/scans — submit a new scan
 # ---------------------------------------------------------------------------
 
+async def _run_scan_background(scan_id: uuid.UUID, repo_url: str, branch: str) -> None:
+    """Execute scan immediately — used as FastAPI BackgroundTask so scans run
+    even on Vercel serverless where the poll-loop worker may not be alive."""
+    try:
+        from app.workers.scan_worker import _execute_scan  # type: ignore[attr-defined]
+        await _execute_scan(scan_id, repo_url, branch)
+    except Exception as exc:
+        logger.error("Background scan task failed: %s", exc, exc_info=True)
+        try:
+            await db.fail_scan(scan_id, error=str(exc))
+        except Exception:
+            pass
+
+
 @router.post("", response_model=ScanResponse, status_code=201)
-async def submit_scan(body: ScanRequest, request: Request) -> ScanResponse:
+async def submit_scan(
+    body: ScanRequest, request: Request, background_tasks: BackgroundTasks
+) -> ScanResponse:
     """Queue a new security scan for a GitHub repository."""
     client_ip = request.client.host if request.client else "unknown"
     _check_rate_limit(client_ip)
@@ -71,6 +87,10 @@ async def submit_scan(body: ScanRequest, request: Request) -> ScanResponse:
     scan_id = await db.create_scan(repo_url=body.repo_url, branch=branch)
 
     logger.info("Scan queued: %s -> %s@%s", scan_id, body.repo_url, branch)
+
+    # Trigger scan immediately via BackgroundTasks — critical for Vercel serverless
+    # where the background worker poll loop may not be running between requests.
+    background_tasks.add_task(_run_scan_background, scan_id, body.repo_url, branch)
 
     return ScanResponse(
         scan_id=scan_id,

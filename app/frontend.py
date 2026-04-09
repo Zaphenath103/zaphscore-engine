@@ -425,7 +425,7 @@ function normalizeRepo(input){
 }
 var currentScanId=null;
 function log(msg){var el=document.getElementById('progressLog'),now=new Date(),ts=String(now.getUTCHours()).padStart(2,'0')+':'+String(now.getUTCMinutes()).padStart(2,'0')+':'+String(now.getUTCSeconds()).padStart(2,'0');el.innerHTML+='<div class="log-line"><span class="log-time">'+ts+'</span><span class="log-msg">'+msg+'</span></div>';el.scrollTop=el.scrollHeight}
-function setStatus(s){var el=document.getElementById('progressStatus');el.textContent=s.toUpperCase();el.className='progress-status status-'+s}
+function setStatus(s){var el=document.getElementById('progressStatus');var safe=s&&typeof s==='string'?s:'unknown';el.textContent=safe.toUpperCase();el.className='progress-status status-'+safe}
 function calcFearScore(s){if(!s)return 0;var c=s.critical||0,h=s.high||0,m=s.medium||0,l=s.low||0,raw=c*10+h*6+m*3+l;var score=Math.min(10,Math.round(raw/5*10)/10);if(score<1&&(c+h+m+l)>0)score=1;return score}
 function fearColor(s){return s>=8?'var(--red)':s>=5?'var(--amber)':s>=3?'#D97706':'var(--green)'}
 function fearMsg(s){if(s>=9)return'CRITICAL EXPOSURE — Your repository is actively dangerous. Immediate remediation required. Attackers with AI tools will find these in minutes.';if(s>=7)return'HIGH RISK — Significant vulnerabilities detected. Your security posture is weaker than 80% of scanned repos. Upgrade to Pro for continuous monitoring.';if(s>=5)return'MODERATE RISK — Several issues found. Daily scanning would catch these before they escalate.';if(s>=3)return'LOW RISK — Minor issues detected. Your repo is in better shape than most.';return'MINIMAL RISK — Clean scan. Keep it that way with continuous monitoring.'}
@@ -449,15 +449,49 @@ function startScan(){
   .then(function(d){currentScanId=d.scan_id;log('Scan queued: '+d.scan_id.substring(0,8)+'...');log('Initializing 12-layer analysis pipeline...');document.getElementById('progressBar').style.width='10%';document.getElementById('progressBox').classList.add('scanning');pollScan()})
   .catch(function(e){log(friendlyError(e.message));setStatus('failed');hideShimmer();btn.disabled=false;btn.textContent='\u25B6 SCAN FREE'})
 }
+var _pollCount=0;
 function pollScan(){
   if(!currentScanId)return;
-  fetch('/api/scans/'+currentScanId).then(function(r){return r.json()}).then(function(d){
-    setStatus(d.status);
-    if(d.status==='running'){document.getElementById('progressBar').style.width='50%';log('Analyzing: dependencies, SAST, secrets, IaC, containers...');setTimeout(pollScan,2000)}
-    else if(d.status==='complete'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('done');log('Scan complete!');hideShimmer();showResults(d);document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
-    else if(d.status==='failed'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('fail');log(friendlyError(d.error||''));hideShimmer();document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
-    else{document.getElementById('progressBar').style.width='15%';setTimeout(pollScan,2000)}
-  }).catch(function(e){log('Poll error: '+e.message);setTimeout(pollScan,3000)})
+  _pollCount++;
+  fetch('/api/scans/'+currentScanId)
+  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+  .then(function(d){
+    var status=d&&d.status?d.status:'queued';
+    setStatus(status);
+    if(status==='running'){
+      _pollCount=0;
+      document.getElementById('progressBar').style.width='50%';
+      log('Analyzing: dependencies, SAST, secrets, IaC, containers...');
+      setTimeout(pollScan,2000);
+    } else if(status==='complete'){
+      document.getElementById('progressBox').classList.remove('scanning');
+      document.getElementById('progressBar').style.width='100%';
+      document.getElementById('progressBar').classList.add('done');
+      log('Scan complete!');hideShimmer();showResults(d);
+      document.getElementById('scanBtn').disabled=false;
+      document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE';
+    } else if(status==='failed'){
+      document.getElementById('progressBox').classList.remove('scanning');
+      document.getElementById('progressBar').style.width='100%';
+      document.getElementById('progressBar').classList.add('fail');
+      log(friendlyError(d.error||'Scan failed'));hideShimmer();
+      document.getElementById('scanBtn').disabled=false;
+      document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE';
+    } else {
+      /* queued or unknown — keep polling, but warn if stuck */
+      if(_pollCount===6)log('Engine warming up — scan will start shortly...');
+      if(_pollCount===15)log('Still initialising pipeline. Hang tight...');
+      if(_pollCount>60){
+        log('Scan is taking longer than expected. The engine may be cold-starting.');
+        _pollCount=0;
+      }
+      document.getElementById('progressBar').style.width=Math.min(5+_pollCount,25)+'%';
+      setTimeout(pollScan,2000);
+    }
+  }).catch(function(e){
+    log('Retrying... ('+e.message+')');
+    setTimeout(pollScan,3000);
+  })
 }
 function showResults(d){
   document.getElementById('resultsBox').className='results-box active';
