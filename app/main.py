@@ -130,11 +130,11 @@ async def health():
     import shutil
     from app.workers.scan_worker import worker_alive
 
-    # Check database connectivity
+    # Check database connectivity (3s timeout — health must never hang)
     db_ok = False
     try:
         from app.models import database as db
-        scan_list, _ = await db.list_scans(page=1, per_page=1)
+        scan_list, _ = await asyncio.wait_for(db.list_scans(page=1, per_page=1), timeout=3.0)
         db_ok = True
     except Exception:
         pass

@@ -37,6 +37,7 @@ async def get_pool() -> asyncpg.Pool:
             min_size=2,
             max_size=settings.SCAN_CONCURRENCY + 5,
             command_timeout=60,
+            timeout=5,  # fail fast if Postgres is unreachable → SQLite fallback kicks in
         )
     return _pool
 
