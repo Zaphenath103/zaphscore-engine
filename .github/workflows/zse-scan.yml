@@ -1,0 +1,121 @@
+name: ZaphScore Security Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
+  workflow_dispatch:
+    inputs:
+      scan_depth:
+        description: 'Scan depth (quick/full)'
+        default: 'quick'
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ZSE
+        run: |
+          pip install semgrep trufflehog checkov trivy
+          pip install aiohttp pydantic
+
+      - name: Run ZSE Scan
+        id: scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -c "
+          import asyncio, json, sys
+          sys.path.insert(0, '.')
+          from app.engine.pipeline import run_scan
+
+          async def _noop_callback(data): pass
+
+          async def main():
+              result = await run_scan(
+                  scan_id='ci-scan',
+                  repo_url='local',
+                  branch='${{ github.ref_name }}',
+                  repo_dir='.',
+                  progress_callback=_noop_callback,
+              )
+
+              # Convert Pydantic models to dicts for JSON serialization
+              serializable = dict(result)
+              if hasattr(serializable.get('score'), 'model_dump'):
+                  serializable['score'] = serializable['score'].model_dump()
+              if hasattr(serializable.get('summary'), 'model_dump'):
+                  serializable['summary'] = serializable['summary'].model_dump()
+              serializable['findings'] = [
+                  f.model_dump() if hasattr(f, 'model_dump') else f
+                  for f in serializable.get('findings', [])
+              ]
+
+              print(json.dumps(serializable, default=str))
+              with open('scan-results.json', 'w') as f:
+                  json.dump(serializable, f, default=str)
+
+              # Fail if critical findings
+              criticals = [f for f in serializable.get('findings', []) if f.get('severity') == 'critical']
+              if criticals:
+                  print(f'::error::Found {len(criticals)} critical security findings')
+                  sys.exit(1)
+
+          asyncio.run(main())
+          "
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zse-scan-results
+          path: scan-results.json
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('scan-results.json', 'utf8'));
+            const score = results.score?.overall || 'N/A';
+            const findings = results.findings?.length || 0;
+            const critical = results.findings?.filter(f => f.severity === 'critical').length || 0;
+
+            const body = `## ZaphScore Security Scan
+
+            | Metric | Value |
+            |--------|-------|
+            | **Score** | ${score}/100 |
+            | **Findings** | ${findings} |
+            | **Critical** | ${critical} |
+
+            ${critical > 0 ? '**Critical findings detected -- review required**' : 'No critical findings'}
+
+            <details><summary>View all findings</summary>
+
+            ${results.findings?.map(f => `- **${f.severity.toUpperCase()}**: ${f.title}`).join('\n') || 'None'}
+
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
