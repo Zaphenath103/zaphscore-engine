@@ -50,8 +50,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Make startup script executable
-RUN chmod +x start.sh
+# Fix Windows line endings + make executable
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # ---- Runtime ----------------------------------------------------------------
 # NO Docker HEALTHCHECK — Railway uses its own via railway.toml
