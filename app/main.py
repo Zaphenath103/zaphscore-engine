@@ -44,19 +44,33 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("ZSE starting up...")
 
-    # Database auto-detection: Postgres -> SQLite fallback
+    # Database backend selection:
+    # If DATABASE_URL looks like a real external Postgres (not localhost/default),
+    # attempt Postgres first. Otherwise go straight to SQLite — no hanging.
     db_backend = "unknown"
-    try:
-        from app.models import database as db
-        await db.init_db()
-        db_backend = "PostgreSQL"
-        logger.info("Using PostgreSQL database backend")
-    except Exception as pg_err:
-        logger.warning(
-            "PostgreSQL unavailable (%s), falling back to SQLite", pg_err
-        )
+    _db_url = settings.DATABASE_URL
+    _use_postgres = (
+        _db_url
+        and "localhost" not in _db_url
+        and "127.0.0.1" not in _db_url
+        and _db_url.startswith("postgresql")
+    )
+
+    if _use_postgres:
         try:
-            from app.models import database_sqlite as db  # type: ignore[no-redef]
+            from app.models import database as db
+            await db.init_db()
+            db_backend = "PostgreSQL"
+            logger.info("Using PostgreSQL database backend")
+        except Exception as pg_err:
+            logger.warning(
+                "PostgreSQL unavailable (%s), falling back to SQLite", pg_err
+            )
+            _use_postgres = False
+
+    if not _use_postgres:
+        try:
+            from app.models import database_sqlite as db  # type: ignore[import,no-redef]
             await db.init_db()
             db_backend = "SQLite"
             # Monkey-patch the database module so all existing imports use SQLite
@@ -64,12 +78,9 @@ async def lifespan(app: FastAPI):
             for attr in dir(db):
                 if not attr.startswith("_"):
                     setattr(db_module, attr, getattr(db, attr))
-            logger.info("Using SQLite database backend (local/demo mode)")
+            logger.info("Using SQLite database backend (demo/local mode)")
         except Exception as sqlite_err:
-            logger.critical(
-                "No database backend available! PostgreSQL: %s | SQLite: %s",
-                pg_err, sqlite_err,
-            )
+            logger.critical("Cannot start ZSE: SQLite failed: %s", sqlite_err)
             raise RuntimeError("Cannot start ZSE without a database") from sqlite_err
 
     await start_worker()
@@ -124,9 +135,18 @@ app.include_router(repos_router)
 # Health / root
 # ---------------------------------------------------------------------------
 
+@app.get("/ping", tags=["health"])
+async def ping():
+    """Instant liveness probe — no DB calls, always fast.
+
+    Used by Railway healthcheck so the deploy never hangs waiting for DB.
+    """
+    return {"ok": True}
+
+
 @app.get("/", tags=["health"])
 async def health():
-    """Health check — confirms the API is running with subsystem status."""
+    """Full health check — confirms the API is running with subsystem status."""
     import shutil
     from app.workers.scan_worker import worker_alive
 
