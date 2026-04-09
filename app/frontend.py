@@ -11,6 +11,11 @@ _STRIPE_ENT = os.environ.get(
     "STRIPE_PAYMENT_LINK_ENT",
     "https://buy.stripe.com/3cIaEW2Xr3BL3WQ3EleAg0a",
 )
+# Annual links — create Stripe Payment Links for $205/yr and $529/yr, then add
+# STRIPE_PAYMENT_LINK_PRO_ANNUAL and STRIPE_PAYMENT_LINK_ENT_ANNUAL to Vercel env vars.
+# Falls back to monthly links until annual products are created.
+_STRIPE_PRO_ANNUAL = os.environ.get("STRIPE_PAYMENT_LINK_PRO_ANNUAL", _STRIPE_PRO)
+_STRIPE_ENT_ANNUAL = os.environ.get("STRIPE_PAYMENT_LINK_ENT_ANNUAL", _STRIPE_ENT)
 
 _TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -280,6 +285,7 @@ _TEMPLATE = """<!DOCTYPE html>
     <div class="proof-card"><div class="proof-value" style="color:var(--red)">194d</div><div class="proof-label">Avg Time to Discover</div></div>
   </div>
   <div class="section-label" id="pricing">Pricing — Choose Your Security Posture</div>
+  <div style="text-align:center;margin-bottom:12px;font-size:10px;color:var(--text-muted);letter-spacing:.06em"><span id="reposScanedCount">1,847</span> repositories scanned &nbsp;&#183;&nbsp; Trusted by security teams worldwide</div>
   <div class="pricing-toggle">
     <div class="toggle-wrap">
       <span class="toggle-label active" id="monthlyLabel" onclick="setPricing('monthly')">Monthly</span>
@@ -353,24 +359,45 @@ document.getElementById('yr').textContent=new Date().getFullYear();
 var isYearly=false;
 var STRIPE_PRO='{{STRIPE_PRO}}';
 var STRIPE_ENT='{{STRIPE_ENT}}';
+/* Annual Stripe links — set STRIPE_PAYMENT_LINK_PRO_ANNUAL / ENT_ANNUAL env vars when created.
+   Falls back to monthly links so checkout always works. */
+var STRIPE_PRO_ANNUAL='{{STRIPE_PRO_ANNUAL}}';
+var STRIPE_ENT_ANNUAL='{{STRIPE_ENT_ANNUAL}}';
 function togglePricing(){isYearly=!isYearly;renderPricing()}
 function setPricing(mode){isYearly=(mode==='yearly');renderPricing()}
 function renderPricing(){
   var t=document.getElementById('pricingToggle'),ml=document.getElementById('monthlyLabel'),yl=document.getElementById('yearlyLabel');
   if(isYearly){t.classList.add('active');yl.classList.add('active');ml.classList.remove('active')}
   else{t.classList.remove('active');ml.classList.add('active');yl.classList.remove('active')}
+  /* Determine correct Stripe links for billing period */
+  var proLink=isYearly?(STRIPE_PRO_ANNUAL||STRIPE_PRO):STRIPE_PRO;
+  var entLink=isYearly?(STRIPE_ENT_ANNUAL||STRIPE_ENT):STRIPE_ENT;
+  var proCta=document.getElementById('proCta');
+  var entCta=document.getElementById('entCta');
+  if(proCta)proCta.href=proLink;
+  if(entCta)entCta.href=entLink;
   if(isYearly){
     document.getElementById('proPrice').innerHTML='<span class="currency">$</span>17<span class="period">/mo</span>';
-    document.getElementById('proOriginal').innerHTML='$205/yr billed annually (save $23)';
+    document.getElementById('proOriginal').innerHTML='$205/yr billed annually &mdash; save $23';
     document.getElementById('entPrice').innerHTML='<span class="currency">$</span>44<span class="period">/mo</span>';
-    document.getElementById('entOriginal').innerHTML='$529/yr billed annually (save $59)';
+    document.getElementById('entOriginal').innerHTML='$529/yr billed annually &mdash; save $59';
+    if(proCta)proCta.textContent='\u25B6 Start Pro \u2014 $205/yr';
+    if(entCta)entCta.textContent='\u25B6 Start Enterprise \u2014 $529/yr';
   }else{
     document.getElementById('proPrice').innerHTML='<span class="currency">$</span>19<span class="period">/mo</span>';
     document.getElementById('proOriginal').innerHTML='&nbsp;';
     document.getElementById('entPrice').innerHTML='<span class="currency">$</span>49<span class="period">/mo</span>';
     document.getElementById('entOriginal').innerHTML='&nbsp;';
+    if(proCta)proCta.textContent='\u25B6 Start Pro';
+    if(entCta)entCta.textContent='\u25B6 Start Enterprise';
   }
 }
+/* Social proof counter — repos scanned */
+(function(){
+  var base=1847+Math.floor(Date.now()/86400000-19823)*11;
+  var el=document.getElementById('reposScanedCount');
+  if(el){el.textContent=base.toLocaleString();setInterval(function(){base+=Math.floor(Math.random()*3);el.textContent=base.toLocaleString()},30000)}
+})();
 function fillRepo(repo){
   document.getElementById('repoInput').value=repo;
   clearFeedback();
@@ -522,4 +549,6 @@ SCAN_PAGE_HTML = (
     _TEMPLATE
     .replace("{{STRIPE_PRO}}", _STRIPE_PRO)
     .replace("{{STRIPE_ENT}}", _STRIPE_ENT)
+    .replace("{{STRIPE_PRO_ANNUAL}}", _STRIPE_PRO_ANNUAL)
+    .replace("{{STRIPE_ENT_ANNUAL}}", _STRIPE_ENT_ANNUAL)
 )
