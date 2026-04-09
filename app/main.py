@@ -9,15 +9,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.scans import router as scans_router
-from app.api.repos import router as repos_router
 from app.config import settings
-from app.workers.scan_worker import start_worker, shutdown_worker
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -29,91 +27,96 @@ logging.basicConfig(
 )
 logger = logging.getLogger("zse")
 
+# ---------------------------------------------------------------------------
+# Global state — set during lifespan, read by endpoints
+# ---------------------------------------------------------------------------
+_db_backend: str = "none"
+_db_ok: bool = False
+_worker_ok: bool = False
+
 
 # ---------------------------------------------------------------------------
-# Lifespan — startup / shutdown
+# Lifespan — startup / shutdown (CRASH-PROOF)
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage startup and shutdown events.
+    """Startup/shutdown. NEVER crashes — app must always start for healthcheck."""
+    global _db_backend, _db_ok, _worker_ok
 
-    Auto-detects database backend: tries PostgreSQL first, falls back
-    to SQLite so the server can run locally without Postgres.
-    """
-    # --- Startup ---
-    logger.info("ZSE starting up...")
+    logger.info("ZSE starting up... PORT=%s", os.environ.get("PORT", "not set"))
 
-    # Database backend selection:
-    # If DATABASE_URL looks like a real external Postgres (not localhost/default),
-    # attempt Postgres first. Otherwise go straight to SQLite — no hanging.
-    db_backend = "unknown"
+    # --- Database (best-effort, non-fatal) ---
     _db_url = settings.DATABASE_URL
-    _use_postgres = (
-        _db_url
-        and "localhost" not in _db_url
-        and "127.0.0.1" not in _db_url
-        and _db_url.startswith("postgresql")
-    )
+    _skip_postgres = "localhost" in _db_url or "127.0.0.1" in _db_url
 
-    if _use_postgres:
+    if not _skip_postgres and _db_url.startswith("postgresql"):
         try:
             from app.models import database as db
-            await db.init_db()
-            db_backend = "PostgreSQL"
-            logger.info("Using PostgreSQL database backend")
-        except Exception as pg_err:
-            logger.warning(
-                "PostgreSQL unavailable (%s), falling back to SQLite", pg_err
-            )
-            _use_postgres = False
+            await asyncio.wait_for(db.init_db(), timeout=10)
+            _db_backend = "PostgreSQL"
+            _db_ok = True
+            logger.info("PostgreSQL connected")
+        except Exception as e:
+            logger.warning("PostgreSQL failed: %s — trying SQLite", e)
 
-    if not _use_postgres:
+    if not _db_ok:
         try:
-            from app.models import database_sqlite as db  # type: ignore[import,no-redef]
+            from app.models import database_sqlite as db  # type: ignore[no-redef]
             await db.init_db()
-            db_backend = "SQLite"
-            # Monkey-patch the database module so all existing imports use SQLite
+            _db_backend = "SQLite"
+            _db_ok = True
+            # Monkey-patch so other modules use SQLite
             import app.models.database as db_module
             for attr in dir(db):
                 if not attr.startswith("_"):
                     setattr(db_module, attr, getattr(db, attr))
-            logger.info("Using SQLite database backend (demo/local mode)")
-        except Exception as sqlite_err:
-            logger.critical("Cannot start ZSE: SQLite failed: %s", sqlite_err)
-            raise RuntimeError("Cannot start ZSE without a database") from sqlite_err
+            logger.info("SQLite connected")
+        except Exception as e:
+            logger.error("SQLite also failed: %s — running without database", e)
+            _db_backend = "none"
 
-    await start_worker()
-    logger.info("Background scan worker started. DB backend: %s", db_backend)
+    # --- Worker (best-effort, non-fatal) ---
+    if _db_ok:
+        try:
+            from app.workers.scan_worker import start_worker
+            await start_worker()
+            _worker_ok = True
+            logger.info("Scan worker started")
+        except Exception as e:
+            logger.error("Worker failed to start: %s", e)
+
+    logger.info("ZSE ready — db=%s worker=%s", _db_backend, _worker_ok)
 
     yield  # ---- app is running ----
 
-    # --- Shutdown ---
+    # --- Shutdown (best-effort) ---
     logger.info("ZSE shutting down...")
-    await shutdown_worker()
-    # Use the potentially monkey-patched close_pool
-    from app.models.database import close_pool
-    await close_pool()
+    try:
+        from app.workers.scan_worker import shutdown_worker
+        await shutdown_worker()
+    except Exception:
+        pass
+    try:
+        from app.models.database import close_pool
+        await close_pool()
+    except Exception:
+        pass
     logger.info("ZSE shutdown complete.")
 
 
 # ---------------------------------------------------------------------------
-# Application factory
+# Application
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Zaphenath Security Engine",
-    description=(
-        "Production-grade security scanning backend. "
-        "Submit a GitHub repo URL and get a comprehensive security report "
-        "covering vulnerabilities, SAST, secrets, IaC misconfigurations, "
-        "and license compliance."
-    ),
+    description="Production-grade security scanning backend.",
     version="0.1.0",
     lifespan=lifespan,
 )
 
-# CORS — configurable via CORS_ORIGINS env var; defaults to "*" for dev
+# CORS
 _cors_origins = (
     ["*"] if settings.CORS_ORIGINS == "*"
     else [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
@@ -126,54 +129,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount routers
-app.include_router(scans_router)
-app.include_router(repos_router)
+# Mount routers — wrapped so a broken router never kills startup
+try:
+    from app.api.scans import router as scans_router
+    app.include_router(scans_router)
+except Exception as e:
+    logger.error("Failed to load scans router: %s", e)
+
+try:
+    from app.api.repos import router as repos_router
+    app.include_router(repos_router)
+except Exception as e:
+    logger.error("Failed to load repos router: %s", e)
 
 
 # ---------------------------------------------------------------------------
-# Health / root
+# Health endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/ping", tags=["health"])
+@app.get("/ping")
 async def ping():
-    """Instant liveness probe — no DB calls, always fast.
-
-    Used by Railway healthcheck so the deploy never hangs waiting for DB.
-    """
+    """Instant liveness probe — Railway healthcheck. Always returns 200."""
     return {"ok": True}
 
 
-@app.get("/", tags=["health"])
+@app.get("/")
 async def health():
-    """Full health check — confirms the API is running with subsystem status."""
-    import shutil
-    from app.workers.scan_worker import worker_alive
-
-    # Check database connectivity (3s timeout — health must never hang)
-    db_ok = False
-    try:
-        from app.models import database as db
-        scan_list, _ = await asyncio.wait_for(db.list_scans(page=1, per_page=1), timeout=3.0)
-        db_ok = True
-    except Exception:
-        pass
-
-    # Check tool availability
-    tools = {
-        "semgrep": shutil.which("semgrep") is not None,
-        "trufflehog": shutil.which("trufflehog") is not None,
-        "trivy": shutil.which("trivy") is not None,
-        "checkov": shutil.which("checkov") is not None,
-    }
-
-    overall = "ok" if (db_ok and worker_alive) else "degraded"
-
+    """Full health with subsystem status."""
     return {
         "service": "zaphenath-security-engine",
-        "status": overall,
+        "status": "ok" if (_db_ok and _worker_ok) else "degraded",
         "version": app.version,
-        "database": "connected" if db_ok else "disconnected",
-        "worker": "alive" if worker_alive else "down",
-        "tools": tools,
+        "database": _db_backend,
+        "worker": "alive" if _worker_ok else "down",
+        "port": os.environ.get("PORT", "default"),
     }

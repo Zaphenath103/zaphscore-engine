@@ -50,11 +50,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Make startup script executable
+RUN chmod +x start.sh
+
 # ---- Runtime ----------------------------------------------------------------
-EXPOSE 8000
+# NO Docker HEALTHCHECK — Railway uses its own via railway.toml
+# NO hardcoded EXPOSE — Railway sets $PORT dynamically
 
-# Health check — hit the root endpoint
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/ || exit 1
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "start.sh"]
