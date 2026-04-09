@@ -33,7 +33,15 @@ _TEMPLATE = """<!DOCTYPE html>
 <meta property="og:description" content="Free security scanning for GitHub repos. 12 layers. 4 seconds. Upgrade to Pro for continuous monitoring.">
 <meta property="og:url" content="https://zaphscore.zaphenath.app">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://zaphscore.zaphenath.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ZaphScore — 12-Layer Security Scan in 4 Seconds">
+<meta name="twitter:description" content="Free security scanning for GitHub repos. 12 layers. 4 seconds. Upgrade to Pro for continuous monitoring.">
+<meta name="twitter:image" content="https://zaphscore.zaphenath.app/og-image.png">
+<meta name="twitter:image:alt" content="ZaphScore — 12-Layer Security Scan. Free for any GitHub repo.">
 <link rel="canonical" href="https://zaphscore.zaphenath.app">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f6e1;</text></svg>">
 <style>
