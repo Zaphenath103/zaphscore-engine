@@ -22,6 +22,7 @@ _TEMPLATE = """<!DOCTYPE html>
 <meta property="og:title" content="ZaphScore — 12-Layer Security Scan in 4 Seconds">
 <meta property="og:description" content="Free security scanning for GitHub repos. 12 layers. 4 seconds. Upgrade to Pro for continuous monitoring.">
 <meta property="og:url" content="https://zaphscore.zaphenath.app">
+<meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://zaphscore.zaphenath.app">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f6e1;</text></svg>">
@@ -56,20 +57,26 @@ _TEMPLATE = """<!DOCTYPE html>
   .section-label{font-size:9px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px;margin-top:32px;display:flex;align-items:center;gap:8px}
   .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
   .hero{text-align:center;margin-bottom:32px}
-  .hero-title{font-size:32px;font-weight:800;line-height:1.1;margin-bottom:8px}
-  .hero-title .accent{color:var(--red)}
+  h1.hero-title{font-size:32px;font-weight:800;line-height:1.1;margin-bottom:8px}
+  h1.hero-title .accent{color:var(--red)}
   .hero-sub{font-size:12px;color:var(--text-muted);max-width:560px;margin:0 auto;line-height:1.6}
   .scan-box{background:var(--dark);border:1px solid #333;padding:32px;margin-bottom:24px}
   .scan-label{font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#6B6860;margin-bottom:12px}
-  .scan-input-row{display:flex;gap:8px;margin-bottom:12px}
+  .scan-input-row{display:flex;gap:8px;margin-bottom:4px}
   .scan-input{flex:1;padding:14px 16px;background:#1A1917;border:1px solid #333;color:#F8F7F4;font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s}
   .scan-input:focus{border-color:var(--red)}
   .scan-input::placeholder{color:#6B6860}
+  .scan-input.input-error{border-color:var(--red)}
   .scan-btn{padding:14px 28px;background:var(--red);color:white;border:none;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;white-space:nowrap}
   .scan-btn:hover{background:#A11919}
   .scan-btn:disabled{background:#333;color:#6B6860;cursor:not-allowed}
+  .input-feedback{font-size:10px;color:var(--red);min-height:18px;margin-bottom:4px;padding-left:2px}
   .scan-hint{font-size:9px;color:#6B6860;letter-spacing:0.06em}
   .scan-hint a{color:#9B9890;text-decoration:none}
+  .try-these{margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .try-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6B6860}
+  .try-chip{padding:4px 12px;border:1px solid #333;color:#9B9890;font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .2s;background:transparent}
+  .try-chip:hover{border-color:var(--red);color:#F8F7F4}
   .layers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px}
   .layer{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #333;font-size:9px;color:#9B9890}
   .layer-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -162,9 +169,17 @@ _TEMPLATE = """<!DOCTYPE html>
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   @keyframes scan-sweep{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .scanning .progress-bar{background:linear-gradient(90deg,var(--blue) 0%,#60A5FA 50%,var(--blue) 100%);background-size:200% 100%;animation:scan-sweep 1.5s ease-in-out infinite}
+  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+  .shimmer-box{display:none;background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:24px}
+  .shimmer-box.active{display:block}
+  .shimmer-line{height:14px;margin-bottom:12px;background:linear-gradient(90deg,#F3F2EF 25%,#E8E7E3 37%,#F3F2EF 63%);background-size:800px 100%;animation:shimmer 1.6s ease-in-out infinite;border-radius:2px}
+  .shimmer-line.w60{width:60%}.shimmer-line.w80{width:80%}.shimmer-line.w40{width:40%}.shimmer-line.w70{width:70%}
+  .shimmer-score{width:80px;height:80px;margin:0 auto 16px;background:linear-gradient(90deg,#F3F2EF 25%,#E8E7E3 37%,#F3F2EF 63%);background-size:800px 100%;animation:shimmer 1.6s ease-in-out infinite;border-radius:4px}
+  .shimmer-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
+  .shimmer-cell{height:50px;background:linear-gradient(90deg,#F3F2EF 25%,#E8E7E3 37%,#F3F2EF 63%);background-size:800px 100%;animation:shimmer 1.6s ease-in-out infinite;border-radius:2px}
   @media(max-width:1024px){.pricing-grid{grid-template-columns:1fr}.proof-row{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:768px){.layers{grid-template-columns:repeat(2,1fr)}.results-summary{grid-template-columns:repeat(3,1fr)}.hero-title{font-size:22px}.scan-input-row{flex-direction:column}.header{flex-direction:column;gap:8px;align-items:flex-start}.proof-row{grid-template-columns:1fr 1fr}}
-  @media(max-width:480px){.layers{grid-template-columns:1fr 1fr}.results-summary{grid-template-columns:1fr 1fr}.pricing-grid{grid-template-columns:1fr}.price-amount{font-size:28px}}
+  @media(max-width:768px){.layers{grid-template-columns:repeat(2,1fr)}.results-summary{grid-template-columns:repeat(3,1fr)}.hero-title{font-size:22px}.scan-input-row{flex-direction:column}.header{flex-direction:column;gap:8px;align-items:flex-start}.proof-row{grid-template-columns:1fr 1fr}.shimmer-grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:480px){.layers{grid-template-columns:1fr 1fr}.results-summary{grid-template-columns:1fr 1fr}.pricing-grid{grid-template-columns:1fr}.price-amount{font-size:28px}.shimmer-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -186,7 +201,7 @@ _TEMPLATE = """<!DOCTYPE html>
 </div>
 <div class="main">
   <div class="hero" id="scan">
-    <div class="hero-title">Know Your <span class="accent">Score</span> Before They Do</div>
+    <h1 class="hero-title">Know Your <span class="accent">Score</span> Before They Do</h1>
     <div class="hero-sub">12-layer security scan on any GitHub repository. Dependencies, SAST, secrets, IaC, containers, SBOM, and more. Free tier forever. Results in seconds.</div>
   </div>
   <div class="scan-box">
@@ -195,7 +210,14 @@ _TEMPLATE = """<!DOCTYPE html>
       <input type="text" class="scan-input" id="repoInput" placeholder="https://github.com/owner/repo  or  owner/repo" autocomplete="off" spellcheck="false">
       <button class="scan-btn" id="scanBtn" onclick="startScan()">&#9654; SCAN FREE</button>
     </div>
+    <div class="input-feedback" id="inputFeedback"></div>
     <div class="scan-hint">Accepts any public GitHub repository — paste the full URL or type <strong>owner/repo</strong> &middot; Free tier: 3 scans/day &middot; <a href="/docs" target="_blank">API Docs</a></div>
+    <div class="try-these">
+      <span class="try-label">Try these:</span>
+      <span class="try-chip" onclick="fillRepo('facebook/react')">facebook/react</span>
+      <span class="try-chip" onclick="fillRepo('vercel/next.js')">vercel/next.js</span>
+      <span class="try-chip" onclick="fillRepo('expressjs/express')">expressjs/express</span>
+    </div>
     <div class="layers">
       <div class="layer"><div class="layer-dot"></div> Dependencies</div>
       <div class="layer"><div class="layer-dot"></div> SAST Analysis</div>
@@ -215,6 +237,22 @@ _TEMPLATE = """<!DOCTYPE html>
     <div class="progress-title"><span>Scanning <span id="progressRepo">...</span></span><span class="progress-status status-queued" id="progressStatus">QUEUED</span></div>
     <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-log" id="progressLog"></div>
+  </div>
+  <div class="shimmer-box" id="shimmerBox">
+    <div class="shimmer-score"></div>
+    <div class="shimmer-line w80"></div>
+    <div class="shimmer-line w60"></div>
+    <div class="shimmer-line w70"></div>
+    <div class="shimmer-grid">
+      <div class="shimmer-cell"></div>
+      <div class="shimmer-cell"></div>
+      <div class="shimmer-cell"></div>
+      <div class="shimmer-cell"></div>
+      <div class="shimmer-cell"></div>
+    </div>
+    <div class="shimmer-line w40" style="margin-top:16px"></div>
+    <div class="shimmer-line w80"></div>
+    <div class="shimmer-line w60"></div>
   </div>
   <div class="results-box" id="resultsBox">
     <div class="results-header">
@@ -306,7 +344,7 @@ _TEMPLATE = """<!DOCTYPE html>
 </div>
 <div class="footer">
   ZaphScore &middot; A <a href="https://zaphenath.app">Zaphenath</a> Security Product &middot; <span id="yr">2026</span>
-  <br><a href="/docs">API</a> &middot; <a href="/health">Status</a> &middot; <a href="https://zaphenath.app/privacy">Privacy</a> &middot; <a href="https://zaphenath.app/terms">Terms</a>
+  <br><a href="/docs">API Docs</a> &middot; <a href="/health">Status</a> &middot; <a href="https://zaphenath.app/privacy">Privacy</a> &middot; <a href="https://zaphenath.app/terms">Terms</a>
 </div>
 <script>
 function tick(){var n=new Date(),h=String(n.getUTCHours()).padStart(2,'0'),m=String(n.getUTCMinutes()).padStart(2,'0'),s=String(n.getUTCSeconds()).padStart(2,'0');document.getElementById('clock').textContent=h+':'+m+':'+s+' UTC'}
@@ -333,16 +371,54 @@ function renderPricing(){
     document.getElementById('entOriginal').innerHTML='&nbsp;';
   }
 }
+function fillRepo(repo){
+  document.getElementById('repoInput').value=repo;
+  clearFeedback();
+  document.getElementById('repoInput').focus();
+}
+function clearFeedback(){
+  document.getElementById('inputFeedback').textContent='';
+  document.getElementById('repoInput').classList.remove('input-error');
+}
+function showFeedback(msg){
+  document.getElementById('inputFeedback').textContent=msg;
+  document.getElementById('repoInput').classList.add('input-error');
+}
+function validateInput(val){
+  if(!val||!val.trim()){showFeedback('Enter a GitHub repository to scan');return false}
+  val=val.trim();
+  // Strip protocol and github.com prefix for validation
+  var cleaned=val.replace(/^https?:\/\/(www\.)?github\.com\//,'').replace(/\/+$/,'').replace(/\.git$/,'');
+  // If it looks like a full URL to something else, let it through
+  if(val.startsWith('http')&&!val.match(/github\.com/)){showFeedback('Only GitHub repositories are supported');return false}
+  // Check for invalid characters
+  if(cleaned.match(/[^a-zA-Z0-9_.\/\-]/)){showFeedback('Invalid repository format');return false}
+  // Just a username, no slash
+  if(cleaned.match(/^[a-zA-Z0-9_.\-]+$/)&&!cleaned.includes('/')){showFeedback('Enter owner/repo format (e.g. '+cleaned+'/repo-name)');return false}
+  clearFeedback();
+  return true;
+}
+function friendlyError(msg){
+  if(!msg)return'Something went wrong. Please check the repo URL and try again.';
+  var lower=msg.toLowerCase();
+  if(lower.indexOf('clone')!==-1||lower.indexOf('clone failed')!==-1)return'Could not access this repository. Make sure it is a public GitHub repo in owner/repo format.';
+  if(lower.indexOf('500')!==-1||lower.indexOf('internal server')!==-1)return'Our scanning engine is warming up. Please try again in a moment.';
+  if(lower.indexOf('rate limit')!==-1||lower.indexOf('rate_limit')!==-1||lower.indexOf('429')!==-1)return'You have used your free scans for today. Upgrade to Pro for unlimited scans.';
+  if(lower.indexOf('not found')!==-1||lower.indexOf('404')!==-1)return'Repository not found. Make sure the repo exists and is public.';
+  if(lower.indexOf('timeout')!==-1)return'The scan timed out. This repo may be very large. Try again or upgrade to Pro for priority scanning.';
+  return'Something went wrong. Please check the repo URL and try again.';
+}
 document.getElementById('repoInput').addEventListener('keydown',function(e){if(e.key==='Enter')startScan()});
+document.getElementById('repoInput').addEventListener('input',function(){clearFeedback()});
 function normalizeRepo(input){
-  input=input.trim().replace(/\\/+$/,'').replace(/\\.git$/,'');
+  input=input.trim().replace(/\/+$/,'').replace(/\.git$/,'');
   // Strip protocol and github.com prefix if present
-  input=input.replace(/^https?:\\/\\/(www\\.)?github\\.com\\//,'');
+  input=input.replace(/^https?:\/\/(www\.)?github\.com\//,'');
   // Now input should be "owner/repo" or just "owner"
   // Validate it's owner/repo format
-  if(/^[a-zA-Z0-9_.-]+\\/[a-zA-Z0-9_.-]+$/.test(input))return'https://github.com/'+input;
+  if(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(input))return'https://github.com/'+input;
   // If just "owner" (no slash), show helpful error
-  if(/^[a-zA-Z0-9_.-]+$/.test(input)){alert('Please enter owner/repo format (e.g. '+input+'/repo-name). A GitHub profile URL alone cannot be scanned.');return null}
+  if(/^[a-zA-Z0-9_.-]+$/.test(input)){showFeedback('Enter owner/repo format (e.g. '+input+'/repo-name)');return null}
   // If it's already a full URL to something else, pass through
   if(input.startsWith('http'))return input;
   return'https://github.com/'+input;
@@ -353,8 +429,11 @@ function setStatus(s){var el=document.getElementById('progressStatus');el.textCo
 function calcFearScore(s){if(!s)return 0;var c=s.critical||0,h=s.high||0,m=s.medium||0,l=s.low||0,raw=c*10+h*6+m*3+l;var score=Math.min(10,Math.round(raw/5*10)/10);if(score<1&&(c+h+m+l)>0)score=1;return score}
 function fearColor(s){return s>=8?'var(--red)':s>=5?'var(--amber)':s>=3?'#D97706':'var(--green)'}
 function fearMsg(s){if(s>=9)return'CRITICAL EXPOSURE — Your repository is actively dangerous. Immediate remediation required. Attackers with AI tools will find these in minutes.';if(s>=7)return'HIGH RISK — Significant vulnerabilities detected. Your security posture is weaker than 80% of scanned repos. Upgrade to Pro for continuous monitoring.';if(s>=5)return'MODERATE RISK — Several issues found. Daily scanning would catch these before they escalate.';if(s>=3)return'LOW RISK — Minor issues detected. Your repo is in better shape than most.';return'MINIMAL RISK — Clean scan. Keep it that way with continuous monitoring.'}
+function showShimmer(){document.getElementById('shimmerBox').className='shimmer-box active'}
+function hideShimmer(){document.getElementById('shimmerBox').className='shimmer-box'}
 function startScan(){
-  var input=document.getElementById('repoInput').value;if(!input){document.getElementById('repoInput').focus();return}
+  var input=document.getElementById('repoInput').value;
+  if(!validateInput(input)){document.getElementById('repoInput').focus();return}
   var url=normalizeRepo(input);if(!url){return}
   var btn=document.getElementById('scanBtn');btn.disabled=true;btn.textContent='SCANNING...';
   document.getElementById('progressBox').className='progress-box active';document.getElementById('resultsBox').className='results-box';
@@ -363,19 +442,20 @@ function startScan(){
   document.getElementById('progressRepo').textContent=url.replace('https://github.com/','');
   document.getElementById('fearscoreBar').style.display='none';document.getElementById('fearscoreMsg').style.display='none';
   document.getElementById('upgradeCta').style.display='none';setStatus('queued');
+  showShimmer();
   log('Submitting scan for '+url+'...');
   fetch('/api/scans',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({repo_url:url})})
   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
   .then(function(d){currentScanId=d.scan_id;log('Scan queued: '+d.scan_id.substring(0,8)+'...');log('Initializing 12-layer analysis pipeline...');document.getElementById('progressBar').style.width='10%';document.getElementById('progressBox').classList.add('scanning');pollScan()})
-  .catch(function(e){log('Error: '+e.message);setStatus('failed');btn.disabled=false;btn.textContent='\u25B6 SCAN FREE'})
+  .catch(function(e){log(friendlyError(e.message));setStatus('failed');hideShimmer();btn.disabled=false;btn.textContent='\u25B6 SCAN FREE'})
 }
 function pollScan(){
   if(!currentScanId)return;
   fetch('/api/scans/'+currentScanId).then(function(r){return r.json()}).then(function(d){
     setStatus(d.status);
     if(d.status==='running'){document.getElementById('progressBar').style.width='50%';log('Analyzing: dependencies, SAST, secrets, IaC, containers...');setTimeout(pollScan,2000)}
-    else if(d.status==='complete'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('done');log('Scan complete!');showResults(d);document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
-    else if(d.status==='failed'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('fail');log('Failed: '+(d.error||'unknown'));document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
+    else if(d.status==='complete'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('done');log('Scan complete!');hideShimmer();showResults(d);document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
+    else if(d.status==='failed'){document.getElementById('progressBox').classList.remove('scanning');document.getElementById('progressBar').style.width='100%';document.getElementById('progressBar').classList.add('fail');log(friendlyError(d.error||''));hideShimmer();document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25B6 SCAN FREE'}
     else{document.getElementById('progressBar').style.width='15%';setTimeout(pollScan,2000)}
   }).catch(function(e){log('Poll error: '+e.message);setTimeout(pollScan,3000)})
 }
