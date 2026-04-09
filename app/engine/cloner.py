@@ -37,14 +37,35 @@ _GIT_AVAILABLE: Optional[bool] = None
 
 
 def _has_git() -> bool:
-    """Check if git binary is on PATH (cached)."""
+    """Check if git is actually executable (not just on PATH).
+
+    Uses shutil.which first for speed, then verifies by running `git --version`.
+    This catches environments where git exists on the filesystem but subprocess
+    execution is blocked (e.g., Vercel serverless sandbox).
+    Cached after first call.
+    """
     global _GIT_AVAILABLE
     if _GIT_AVAILABLE is None:
-        _GIT_AVAILABLE = shutil.which("git") is not None
-        if not _GIT_AVAILABLE:
-            logger.warning("git not found on PATH — will use GitHub API tarball download")
+        if shutil.which("git") is None:
+            _GIT_AVAILABLE = False
+            logger.warning("git not found on PATH — using GitHub API tarball download")
         else:
-            logger.info("git found — using native git clone")
+            # Actually try to run git — some sandboxes block subprocess even if git exists
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["git", "--version"],
+                    capture_output=True,
+                    timeout=5,
+                )
+                _GIT_AVAILABLE = result.returncode == 0
+            except Exception as exc:
+                _GIT_AVAILABLE = False
+                logger.warning("git found on PATH but not executable (%s) — using tarball", exc)
+        if _GIT_AVAILABLE:
+            logger.info("git is available — using native git clone")
+        else:
+            logger.info("git unavailable — using GitHub API tarball download")
     return _GIT_AVAILABLE
 
 
@@ -366,11 +387,23 @@ async def clone_repo(
     if not github_token and settings.GITHUB_TOKEN:
         github_token = settings.GITHUB_TOKEN
 
-    # Auto-select strategy
+    # Auto-select strategy — tarball is the fallback when git is unavailable or broken
     if _has_git():
-        clone_dest = await _clone_via_git(
-            repo_url, owner, repo_name, branch, dest_dir, timeout, github_token,
-        )
+        try:
+            clone_dest = await _clone_via_git(
+                repo_url, owner, repo_name, branch, dest_dir, timeout, github_token,
+            )
+        except (FileNotFoundError, OSError, PermissionError) as exc:
+            # Git found on PATH but execution failed (sandbox restriction, broken binary, etc.)
+            # Reset cache so future calls also use tarball in this process
+            global _GIT_AVAILABLE
+            _GIT_AVAILABLE = False
+            logger.warning(
+                "git clone raised %s (%s) — falling back to tarball download", type(exc).__name__, exc
+            )
+            clone_dest = await _clone_via_tarball(
+                repo_url, owner, repo_name, branch, dest_dir, timeout, github_token,
+            )
     else:
         clone_dest = await _clone_via_tarball(
             repo_url, owner, repo_name, branch, dest_dir, timeout, github_token,
