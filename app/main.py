@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from app.config import settings
 
@@ -165,6 +165,23 @@ async def health():
         "worker": "alive" if _worker_ok else "down",
         "port": os.environ.get("PORT", "default"),
     }
+
+
+@app.get("/og-image.png")
+async def og_image():
+    """Serve the ZaphScore OG image for Twitter/X and social previews."""
+    import base64
+    try:
+        from app.og_image_b64 import OG_IMAGE_PNG_B64
+        png_bytes = base64.b64decode(OG_IMAGE_PNG_B64)
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception as e:
+        logger.error("OG image load failed: %s", e)
+        return Response(content=b"", media_type="image/png", status_code=404)
 
 
 @app.get("/", response_class=HTMLResponse)
