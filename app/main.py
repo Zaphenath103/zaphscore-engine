@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from app.config import settings
 
@@ -153,7 +154,7 @@ async def ping():
     return {"ok": True}
 
 
-@app.get("/")
+@app.get("/health")
 async def health():
     """Full health with subsystem status."""
     return {
@@ -164,3 +165,18 @@ async def health():
         "worker": "alive" if _worker_ok else "down",
         "port": os.environ.get("PORT", "default"),
     }
+
+
+@app.get("/", response_class=HTMLResponse)
+async def frontend():
+    """Serve the ZaphScore scan frontend."""
+    try:
+        from app.frontend import SCAN_PAGE_HTML
+        return SCAN_PAGE_HTML
+    except Exception as e:
+        logger.error("Frontend load failed: %s", e)
+        return HTMLResponse(
+            content=f"<html><body><h1>ZaphScore</h1><p>Frontend loading error: {e}</p>"
+            f"<p><a href='/health'>Health</a> | <a href='/docs'>API Docs</a></p></body></html>",
+            status_code=200,
+        )

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,7 +27,8 @@ logger = logging.getLogger("zse.database.sqlite")
 # Connection (singleton)
 # ---------------------------------------------------------------------------
 
-_DB_PATH = Path("./zse_data.db")
+# On Vercel, only /tmp is writable. Locally, use current directory.
+_DB_PATH = Path("/tmp/zse_data.db") if os.environ.get("VERCEL") else Path("./zse_data.db")
 _conn: Optional[aiosqlite.Connection] = None
 
 
