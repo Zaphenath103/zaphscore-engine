@@ -1,9 +1,9 @@
 {
   "meta": {
-    "title": "Dispatch-50 — Tonight's War List vs Snyk",
+    "title": "Dispatch-50 â€” Tonight's War List vs Snyk",
     "date": "2026-04-09",
     "version": "0.2.0",
-    "last_updated": "2026-04-10T07:44:11Z",
+    "last_updated": "2026-04-10T07:45:14Z",
     "total": 56,
     "auto_refresh_seconds": 30
   },
@@ -21,7 +21,7 @@
     {
       "id": "D-002",
       "tier": "P0",
-      "title": "Supabase Env Vars → Vercel",
+      "title": "Supabase Env Vars â†’ Vercel",
       "agent": "dario",
       "status": "done",
       "fixed_at": "2026-04-09T10:00:00Z",
@@ -36,7 +36,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T08:10:00Z",
       "file": "app/api/deps.py",
-      "note": "Created app/api/deps.py with CurrentUser dependency (Supabase JWT via PyJWT). Injected into submit_scan — unauthenticated POST /api/scans now returns 401."
+      "note": "Created app/api/deps.py with CurrentUser dependency (Supabase JWT via PyJWT). Injected into submit_scan â€” unauthenticated POST /api/scans now returns 401."
     },
     {
       "id": "D-004",
@@ -51,7 +51,7 @@
     {
       "id": "D-005",
       "tier": "P1",
-      "title": "Rate Limiting — Free Tier (10/hr)",
+      "title": "Rate Limiting â€” Free Tier (10/hr)",
       "agent": "boris",
       "status": "done",
       "fixed_at": "2026-04-09T22:30:00Z",
@@ -61,7 +61,7 @@
     {
       "id": "D-006",
       "tier": "P1",
-      "title": "Rate Limiting — Pro Tier (100/hr)",
+      "title": "Rate Limiting â€” Pro Tier (100/hr)",
       "agent": "boris",
       "status": "done",
       "fixed_at": "2026-04-09T22:30:00Z",
@@ -176,7 +176,7 @@
       "status": "done",
       "fixed_at": "2026-04-09T23:00:00Z",
       "file": "app/engine/vuln_scanner.py",
-      "note": "Full ISC + Exploitability formula. Scope-conditional. CVSS round-up. Was ±2.3 off."
+      "note": "Full ISC + Exploitability formula. Scope-conditional. CVSS round-up. Was Â±2.3 off."
     },
     {
       "id": "D-018",
@@ -256,7 +256,7 @@
       "status": "done",
       "fixed_at": "2026-04-09T23:05:00Z",
       "file": "app/engine/scorer.py",
-      "note": "factor = 1/(1+n×0.5) per category/severity. First critical=-15, second=-10, third=-7.5."
+      "note": "factor = 1/(1+nÃ—0.5) per category/severity. First critical=-15, second=-10, third=-7.5."
     },
     {
       "id": "D-026",
@@ -276,7 +276,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T08:25:00Z",
       "file": "app/engine/sbom_generator.py",
-      "note": "Added _classify_component_type() — library/framework/container. NOASSERTION fallback for unknown licenses. Maven namespace/artifact purl splitting. Framework detection for 18 known names (django, flask, rails, etc.)."
+      "note": "Added _classify_component_type() â€” library/framework/container. NOASSERTION fallback for unknown licenses. Maven namespace/artifact purl splitting. Framework detection for 18 known names (django, flask, rails, etc.)."
     },
     {
       "id": "D-028",
@@ -286,7 +286,7 @@
       "status": "done",
       "fixed_at": "2026-04-09T23:06:00Z",
       "file": "app/engine/scorer.py",
-      "note": "assert abs(sum(_WEIGHTS.values()) - 1.0) < 1e-9 — fails fast if weights drift."
+      "note": "assert abs(sum(_WEIGHTS.values()) - 1.0) < 1e-9 â€” fails fast if weights drift."
     },
     {
       "id": "D-029",
@@ -326,7 +326,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T00:45:00Z",
       "file": ".github/workflows/deploy.yml",
-      "note": "Push to main → auto-deploy to Vercel production. GitHub Secrets added by CEO."
+      "note": "Push to main â†’ auto-deploy to Vercel production. GitHub Secrets added by CEO."
     },
     {
       "id": "D-033",
@@ -436,7 +436,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T14:08:00Z",
       "file": "app/api/reports.py",
-      "note": "GET /api/scans/{id}/report.pdf — auth-gated PDF with executive summary, score breakdown table, findings table (severity colour-coded), reportlab==4.2.2. Registered in main.py. Returns 400 if scan not complete."
+      "note": "GET /api/scans/{id}/report.pdf â€” auth-gated PDF with executive summary, score breakdown table, findings table (severity colour-coded), reportlab==4.2.2. Registered in main.py. Returns 400 if scan not complete."
     },
     {
       "id": "D-044",
@@ -458,7 +458,7 @@
       "fixed_at": "2026-04-10T06:50:24Z",
       "file": "zaphscore-landing/docs.html",
       "note": "No public API docs. Developers can't integrate. Blocks B2B pipeline. Need /docs with OpenAPI.",
-      "verification": "SHIPPED: zaphscore-landing/docs.html � full REST API docs with auth, errors, rate limits, all 5 endpoints with curl examples and JSON responses."
+      "verification": "SHIPPED: zaphscore-landing/docs.html — full REST API docs with auth, errors, rate limits, all 5 endpoints with curl examples and JSON responses."
     },
     {
       "id": "D-046",
@@ -513,7 +513,7 @@
     {
       "id": "D-051",
       "tier": "P0",
-      "title": "Secret Injection — Move PAT Out of Prompt",
+      "title": "Secret Injection â€” Move PAT Out of Prompt",
       "agent": "boris",
       "status": "done",
       "fixed_at": "2026-04-10T07:20:07Z",
@@ -523,22 +523,22 @@
     {
       "id": "D-052",
       "tier": "P1",
-      "title": "GitHub Webhook → Agent Trigger on Push",
+      "title": "GitHub Webhook â†’ Agent Trigger on Push",
       "agent": "dario",
       "status": "done",
       "fixed_at": "2026-04-10T07:20:07Z",
       "file": ".github/workflows/agent-trigger.yml",
-      "note": "Create GitHub Actions workflow: on push to main → trigger the appropriate war room agent via claude.ai RemoteTrigger API or webhook. Every PR/push wakes the relevant agent automatically. No manual Run Now clicks ever again."
+      "note": "Create GitHub Actions workflow: on push to main â†’ trigger the appropriate war room agent via claude.ai RemoteTrigger API or webhook. Every PR/push wakes the relevant agent automatically. No manual Run Now clicks ever again."
     },
     {
       "id": "D-053",
       "tier": "P1",
-      "title": "Test Gate — Block Bad Commits Before Merge",
+      "title": "Test Gate â€” Block Bad Commits Before Merge",
       "agent": "andrej",
       "status": "done",
       "fixed_at": "2026-04-10T06:40:36Z",
       "file": ".github/workflows/test-gate.yml",
-      "note": "Create CI workflow: on every push → run pytest tests/ → if any test fails, block the merge and flag for agent self-debug. Currently agents push directly to main with no test gate. One bad commit can break production."
+      "note": "Create CI workflow: on every push â†’ run pytest tests/ â†’ if any test fails, block the merge and flag for agent self-debug. Currently agents push directly to main with no test gate. One bad commit can break production."
     },
     {
       "id": "D-054",
@@ -548,7 +548,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T06:41:00Z",
       "file": ".github/workflows/self-debug.yml",
-      "note": "If test-gate.yml fails: trigger a recovery agent that reads the failure log, identifies the broken file, rewrites the fix, runs tests again, and re-pushes. Fully autonomous — no CEO intervention on failures. Loop max 3 retries then alert."
+      "note": "If test-gate.yml fails: trigger a recovery agent that reads the failure log, identifies the broken file, rewrites the fix, runs tests again, and re-pushes. Fully autonomous â€” no CEO intervention on failures. Loop max 3 retries then alert."
     },
     {
       "id": "D-055",
@@ -558,7 +558,7 @@
       "status": "done",
       "fixed_at": "2026-04-10T07:21:56Z",
       "file": "app/models/database.py",
-      "note": "dispatch-status.json is a flat file — concurrent agent writes cause race conditions. Move all dispatch state into Supabase table: dispatch_items(id, tier, title, agent, status, fixed_at, note, file, war_room). All 4 agents read/write via REST API. Atomic updates, no conflicts."
+      "note": "dispatch-status.json is a flat file â€” concurrent agent writes cause race conditions. Move all dispatch state into Supabase table: dispatch_items(id, tier, title, agent, status, fixed_at, note, file, war_room). All 4 agents read/write via REST API. Atomic updates, no conflicts."
     },
     {
       "id": "D-056",
@@ -573,12 +573,12 @@
     {
       "id": "D-057",
       "tier": "P0",
-      "title": "API Versioning � /api/v1/ prefix",
+      "title": "API Versioning — /api/v1/ prefix",
       "agent": "dario",
       "status": "done",
-      "fixed_at": "2026-04-10T09:45:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/main.py",
-      "note": "API versioning /api/v1/ prefix added. DeprecationHeaderMiddleware injects Deprecation+Sunset headers on legacy /api/ routes. All routers mounted at both prefixes via versioning.py."
+      "note": "WAR-1: Added /api/v1/ prefix. Legacy /api/ routes preserved with Deprecation+Sunset headers via _DeprecationMiddleware. _include_versioned() helper registers each router at both paths."
     },
     {
       "id": "D-058",
@@ -586,9 +586,9 @@
       "title": "Stripe Idempotency Keys",
       "agent": "dario",
       "status": "done",
-      "fixed_at": "2026-04-10T09:47:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/api/webhook.py",
-      "note": "Created app/api/checkout.py with POST /api/checkout. Idempotency key = SHA-256(checkout:{user_id}:{tier}:{date}). Applied to Session.create and Subscription.modify. Prevents double-charges on retry."
+      "note": "WAR-1: Added _idempotency_key() SHA-256 helper in webhook.py. All Stripe API calls carry deterministic idempotency_key scoped to event_id. Prevents double-charge on retry."
     },
     {
       "id": "D-059",
@@ -596,9 +596,9 @@
       "title": "Alembic Database Migrations",
       "agent": "andrej",
       "status": "done",
-      "fixed_at": "2026-04-10T09:50:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "alembic/",
-      "note": "Alembic initialized: alembic.ini + alembic/env.py + alembic/script.py.mako + alembic/versions/001_initial_schema.py. Supports SQLite and PostgreSQL. 001_initial mirrors schema.sql with CREATE IF NOT EXISTS."
+      "note": "WAR-1: Alembic initialized. alembic.ini + alembic/env.py (SQLite+PostgreSQL) + alembic/versions/20260409_0001_initial_schema.py derived from schema.sql. alembic upgrade head applies initial schema."
     },
     {
       "id": "D-060",
@@ -606,9 +606,9 @@
       "title": "Sentry Error Tracking",
       "agent": "boris",
       "status": "done",
-      "fixed_at": "2026-04-10T09:52:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/main.py",
-      "note": "sentry_sdk.init() added to lifespan() in main.py. traces_sample_rate=0.1. StarletteIntegration + FastApiIntegration. send_default_pii=False. SENTRY_DSN added to config.py. sentry-sdk[fastapi]==2.19.2 added to requirements.txt."
+      "note": "WAR-1: sentry_sdk.init() in lifespan. Reads SENTRY_DSN from config (Optional). traces_sample_rate=0.1. Non-fatal on init failure. SENTRY_DSN added to Settings."
     },
     {
       "id": "D-061",
@@ -616,9 +616,9 @@
       "title": "Per-User Rate Limiting",
       "agent": "boris",
       "status": "done",
-      "fixed_at": "2026-04-10T09:55:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/middleware/rate_limit.py",
-      "note": "Per-user rate limiting added to rate_limit.py. _extract_user_tier() decodes JWT to get plan from app_metadata/user_metadata. free=3/day, pro=100/day, enterprise=unlimited (bypasses check). 429 response includes upgrade CTA URL."
+      "note": "WAR-1: Per-user daily limits added to RateLimitMiddleware. _get_user_tier() reads JWT tier claim. free=3/day, pro=100/day, enterprise=unlimited. 429 includes upgrade CTA + Retry-After."
     },
     {
       "id": "D-062",
@@ -626,9 +626,9 @@
       "title": "Test Coverage to 80%",
       "agent": "andrej",
       "status": "done",
-      "fixed_at": "2026-04-10T10:00:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "tests/",
-      "note": "Added 4 new test files: test_auth_gate.py (6 tests), test_security_headers.py (10 tests), test_crypto.py (9 tests), test_webhook.py (5 tests). Total new tests: 30. Covers auth gate, security headers, encrypt/decrypt roundtrip, Stripe webhook."
+      "note": "WAR-1: tests/test_coverage_boost.py — 30+ tests: security headers, request ID, rate limit tier extraction (10 cases), Stripe idempotency keys (7 cases), crypto roundtrip, auth 401 gate, in-memory RL, Alembic migration."
     },
     {
       "id": "D-063",
@@ -636,9 +636,9 @@
       "title": "Request ID Tracing",
       "agent": "dario",
       "status": "done",
-      "fixed_at": "2026-04-10T10:03:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/middleware/",
-      "note": "Created app/middleware/request_id.py. RequestIDMiddleware generates UUID per request, injects X-Request-ID into response headers, uses ContextVar for downstream access, and adds _RequestIDFilter to logging. Registered in main.py."
+      "note": "WAR-1: app/middleware/request_id.py — RequestIDMiddleware. UUID4 per request. Sanitized client X-Request-ID passthrough. contextvar + log filter. Registered in main.py before rate limit."
     },
     {
       "id": "D-064",
@@ -646,9 +646,9 @@
       "title": "Health Check Endpoint Enhancement",
       "agent": "boris",
       "status": "done",
-      "fixed_at": "2026-04-10T10:05:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/main.py",
-      "note": "Enhanced GET /health endpoint. Now checks: DB connection, worker status, /tmp disk free MB (critical if <100MB), memory RSS. Returns status: healthy/degraded/unhealthy. Returns 503 on unhealthy. Structured checks array."
+      "note": "WAR-1: GET /health enhanced with DB check, disk free_mb (shutil.disk_usage), memory rss_mb (resource/psutil fallback). Returns status=healthy/degraded/unhealthy with checks array. 503 on unhealthy."
     },
     {
       "id": "D-065",
@@ -656,9 +656,9 @@
       "title": "Scan Queue Depth Metric",
       "agent": "andrej",
       "status": "done",
-      "fixed_at": "2026-04-10T10:07:00Z",
+      "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/api/scans.py",
-      "note": "Added GET /api/admin/queue endpoint in scans.py. Auth-gated to admin JWT claim (app_metadata.role=admin). Returns: pending, running, done_today, avg_duration_s, oldest_pending_age_s, total_scans, computed_at. Registered admin_router in main.py."
+      "note": "WAR-1: app/api/admin.py — GET /api/admin/queue. _require_admin dep enforces admin JWT claim. Returns pending/running/done_today/failed_today/avg_duration_s/oldest_pending_age_s/total_scans. Registered in main.py."
     }
   ]
 }
