@@ -8,42 +8,40 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    """Zaphenath Security Engine configuration.
-
-    Every value comes from an environment variable of the same name (case-insensitive).
-    Provide a .env file or export the variables in your shell / Railway dashboard.
-    """
+    """Zaphenath Security Engine configuration."""
 
     # --- Supabase / Postgres ---
     SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""  # service-role key
+    SUPABASE_KEY: str = ""
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/zse"
 
-    # --- GitHub App (authenticated: 5 000 req/hr) ---
+    # --- GitHub App ---
     GITHUB_APP_ID: str = ""
-    GITHUB_PRIVATE_KEY: str = ""  # PEM contents or path
-
-    # --- GitHub PAT fallback (unauthenticated: 60 req/hr) ---
+    GITHUB_PRIVATE_KEY: str = ""
     GITHUB_TOKEN: str = ""
 
-    # --- Redis (future: caching, pub/sub) ---
+    # --- Redis ---
     REDIS_URL: Optional[str] = None
 
-    # --- Stripe (D-001: webhook) ---
+    # --- Stripe ---
     STRIPE_SECRET_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""          # whsec_... from Stripe dashboard
+    STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PAYMENT_LINK_PRO_MONTHLY: str = ""
     STRIPE_PAYMENT_LINK_PRO_ANNUAL: str = ""
     STRIPE_PAYMENT_LINK_ENT_MONTHLY: str = ""
     STRIPE_PAYMENT_LINK_ENT_ANNUAL: str = ""
 
     # --- Rate limiting (D-005/D-006) ---
-    RATE_LIMIT_FREE: str = "10/hour"          # scans per IP for unauthenticated
-    RATE_LIMIT_PRO: str = "100/hour"          # scans per authenticated Pro user
-    UPSTASH_REDIS_URL: Optional[str] = None   # if set, use Redis for distributed RL
+    RATE_LIMIT_FREE: str = "10/hour"
+    RATE_LIMIT_PRO: str = "100/hour"
+    UPSTASH_REDIS_URL: Optional[str] = None
 
-    # --- Sentry (D-060: error tracking) ---
-    SENTRY_DSN: Optional[str] = None  # Set to enable automatic error reporting
+    # --- D-060: Sentry error tracking ---
+    SENTRY_DSN: Optional[str] = None
+
+    # --- D-061: Per-user daily rate limits by JWT tier ---
+    RATE_LIMIT_FREE_DAILY: int = Field(default=3, ge=1)
+    RATE_LIMIT_PRO_DAILY: int = Field(default=100, ge=1)
 
     # --- Scan tunables ---
     SCAN_CONCURRENCY: int = Field(default=3, ge=1, le=20)
@@ -56,12 +54,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "info"
 
     # --- CORS (D-004) ---
-    # Production: set to comma-separated explicit origins.
-    # Default "*" is development-only; credentials are disabled when wildcard is active.
     CORS_ORIGINS: str = "https://zaphscore.zaphenath.app,https://zaphenath.app"
-
-    # --- Sentry (D-060) ---
-    SENTRY_DSN: str = ""                     # DSN from sentry.io project settings
 
     model_config = {
         "env_file": ".env",
@@ -70,45 +63,25 @@ class Settings(BaseSettings):
     }
 
 
-# Singleton — import this everywhere
 settings = Settings()
 
 
-# ---------------------------------------------------------------------------
-# D-033: Startup env var validation — fail fast with clear error messages
-# ---------------------------------------------------------------------------
-
 def validate_required_env_vars(strict: bool = False) -> list[str]:
-    """Check that critical env vars are set. Returns list of warnings.
-
-    Args:
-        strict: If True, raises RuntimeError on missing P0 vars (use in production).
-                If False, only logs warnings (development-safe default).
-
-    P0 (revenue-critical — must be set in production):
-        STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_KEY
-
-    P1 (security-critical — strongly recommended):
-        SUPABASE_JWT_SECRET
-    """
+    """Check that critical env vars are set. Returns list of warnings."""
     import logging
     import os
     logger = logging.getLogger("zse.config")
-
     warnings: list[str] = []
 
-    # P0: Revenue gates — app must not start in production without these
     p0_vars = [
-        ("STRIPE_SECRET_KEY",    settings.STRIPE_SECRET_KEY,    "Stripe payments will fail"),
-        ("STRIPE_WEBHOOK_SECRET", settings.STRIPE_WEBHOOK_SECRET, "Stripe webhooks will fail — no revenue events"),
-        ("SUPABASE_URL",         settings.SUPABASE_URL,         "Database unavailable in Postgres mode"),
-        ("SUPABASE_KEY",         settings.SUPABASE_KEY,         "Database auth will fail"),
+        ("STRIPE_SECRET_KEY", settings.STRIPE_SECRET_KEY, "Stripe payments will fail"),
+        ("STRIPE_WEBHOOK_SECRET", settings.STRIPE_WEBHOOK_SECRET, "Stripe webhooks will fail"),
+        ("SUPABASE_URL", settings.SUPABASE_URL, "Database unavailable in Postgres mode"),
+        ("SUPABASE_KEY", settings.SUPABASE_KEY, "Database auth will fail"),
     ]
-
-    # P1: Security-critical — auth and JWT verification
     p1_vars = [
         ("SUPABASE_JWT_SECRET", os.environ.get("SUPABASE_JWT_SECRET", ""),
-         "JWT signatures NOT verified — auth gate is permissive"),
+         "JWT signatures NOT verified"),
     ]
 
     missing_p0 = []
@@ -130,5 +103,4 @@ def validate_required_env_vars(strict: bool = False) -> list[str]:
             f"FATAL: Missing required environment variables: {', '.join(missing_p0)}. "
             "Set these in Vercel/Railway dashboard before starting in production."
         )
-
     return warnings
