@@ -681,11 +681,12 @@
     {
       "id": "D-675",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Snyk reachability analysis absent -- we flag every vuln regardless of call-graph reachability",
-      "note": "Snyk reachability uses static call-graph analysis to suppress findings where vulnerable code paths are never invoked. vuln_scanner.py emits findings for every matching OSV record with no reachability filter, causing massive false-positive rates."
+      "note": "Snyk reachability uses static call-graph analysis to suppress findings where vulnerable code paths are never invoked. vuln_scanner.py emits findings for every matching OSV record with no reachability filter, causing massive false-positive rates.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-676",
@@ -1086,20 +1087,22 @@
     {
       "id": "D-720",
       "tier": "P1",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Snyk EPSS integration absent -- we have no Exploit Prediction Scoring System data",
-      "note": "Snyk surfaces EPSS probability scores (0-1) alongside CVSS to help teams prioritise actively-exploited vulns. vuln_scanner.py enriches with NVD CVSS only; no FIRST.org EPSS API call, no exploitation probability field."
+      "note": "Snyk surfaces EPSS probability scores (0-1) alongside CVSS to help teams prioritise actively-exploited vulns. vuln_scanner.py enriches with NVD CVSS only; no FIRST.org EPSS API call, no exploitation probability field.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-721",
       "tier": "P1",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Snyk ignores dev-only vulnerabilities on production images -- we flag all deps equally",
-      "note": "Snyk distinguishes devDependencies from production dependencies and suppresses dev-only vulns in production contexts. vuln_scanner.py receives all deps including dev:True with no production-context filter."
+      "note": "Snyk distinguishes devDependencies from production dependencies and suppresses dev-only vulns in production contexts. vuln_scanner.py receives all deps including dev:True with no production-context filter.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-722",
@@ -1500,11 +1503,12 @@
     {
       "id": "D-766",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Socket.dev dependency confusion attack detection absent -- no namespace collision check",
-      "note": "Socket.dev checks whether a private scoped package has a matching public package that could be resolved instead (dependency confusion attack). vuln_scanner.py queries OSV for CVEs only; no namespace collision analysis."
+      "note": "Socket.dev checks whether a private scoped package has a matching public package that could be resolved instead (dependency confusion attack). vuln_scanner.py queries OSV for CVEs only; no namespace collision analysis.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-767",
@@ -1806,11 +1810,12 @@
     {
       "id": "D-800",
       "tier": "P0",
-      "agent": "dario",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Dependabot GitHub Security Advisories database absent -- we rely on OSV only",
-      "note": "Dependabot sources from the GitHub Advisory Database (GHSA) which includes advisories not yet in NVD/OSV, particularly for GitHub Actions packages. vuln_scanner.py queries OSV.dev only; GHSA-only advisories are missed."
+      "note": "Dependabot sources from the GitHub Advisory Database (GHSA) which includes advisories not yet in NVD/OSV, particularly for GitHub Actions packages. vuln_scanner.py queries OSV.dev only; GHSA-only advisories are missed.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-801",
@@ -2313,11 +2318,12 @@
     {
       "id": "D-855",
       "tier": "P0",
-      "agent": "dario",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "OSV advisory freshness absent -- no mechanism to detect stale advisory data from OSV replication lag",
-      "note": "OSV.dev publishes new advisories continuously but replication lag can occur. vuln_scanner.py queries OSV at scan time with no freshness metadata check; Snyk advisory team manually verifies OSV freshness against NVD daily, a gap we have no equivalent for."
+      "note": "OSV.dev publishes new advisories continuously but replication lag can occur. vuln_scanner.py queries OSV at scan time with no freshness metadata check; Snyk advisory team manually verifies OSV freshness against NVD daily, a gap we have no equivalent for.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-856",
@@ -2352,29 +2358,32 @@
     {
       "id": "D-859",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "OSV batch query: index offset bug risk when OSV returns partial results for large batches",
-      "note": "_query_batch() sends queries in batches of BATCH_SIZE=1000. If OSV returns fewer results than queries (partial response), the index offset between batch_keys and data results causes wrong pkg-to-vuln mapping, silently assigning wrong vulnerabilities to wrong packages."
+      "note": "_query_batch() sends queries in batches of BATCH_SIZE=1000. If OSV returns fewer results than queries (partial response), the index offset between batch_keys and data results causes wrong pkg-to-vuln mapping, silently assigning wrong vulnerabilities to wrong packages.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-860",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "OSV enrichment: no GitHub Advisory API call -- GHSA descriptions are truncated OSV summaries",
-      "note": "vuln_scanner.py fetches OSV vulnerability detail via OSV_VULN_URL/{vid}. For GHSA-prefixed advisories, the full text and affected versions are richer in the GitHub Advisory API than in OSV mirror. We never call the GitHub Advisories API; GHSA descriptions are truncated OSV summaries."
+      "note": "vuln_scanner.py fetches OSV vulnerability detail via OSV_VULN_URL/{vid}. For GHSA-prefixed advisories, the full text and affected versions are richer in the GitHub Advisory API than in OSV mirror. We never call the GitHub Advisories API; GHSA descriptions are truncated OSV summaries.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-861",
       "tier": "P1",
-      "agent": "dario",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "OSV freshness: no advisory withdrawal detection -- withdrawn CVEs remain as active findings",
-      "note": "CVEs are occasionally withdrawn or disputed (NVD REJECT status). vuln_scanner.py has no check for withdrawn=true in OSV data or NVD REJECT status; withdrawn CVEs continue to appear in scan reports as valid findings."
+      "note": "CVEs are occasionally withdrawn or disputed (NVD REJECT status). vuln_scanner.py has no check for withdrawn=true in OSV data or NVD REJECT status; withdrawn CVEs continue to appear in scan reports as valid findings.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-862",
