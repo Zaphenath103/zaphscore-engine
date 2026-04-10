@@ -16,6 +16,7 @@ Mount in main.py:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from typing import Optional
@@ -26,6 +27,32 @@ from fastapi.responses import JSONResponse
 logger = logging.getLogger("zse.webhook")
 
 router = APIRouter(prefix="/api", tags=["webhook"])
+
+# ---------------------------------------------------------------------------
+# D-058: Webhook idempotency cache — prevent double-processing on retries
+# ---------------------------------------------------------------------------
+# Stripe retries webhooks up to 3 days. We keep a rolling cache of processed
+# event IDs. LRU eviction at 10_000 entries prevents unbounded memory growth.
+import time as _time
+from collections import OrderedDict as _OrderedDict
+
+_MAX_CACHE_SIZE = 10_000
+_PROCESSED_EVENTS: "_OrderedDict[str, float]" = _OrderedDict()
+
+
+def _is_event_processed(event_id: str) -> bool:
+    """Return True if this Stripe event was already successfully processed."""
+    return event_id in _PROCESSED_EVENTS
+
+
+def _mark_event_processed(event_id: str) -> None:
+    """Record event_id as processed. Evicts oldest entry if cache is full."""
+    if event_id in _PROCESSED_EVENTS:
+        _PROCESSED_EVENTS.move_to_end(event_id)
+    else:
+        _PROCESSED_EVENTS[event_id] = _time.time()
+        if len(_PROCESSED_EVENTS) > _MAX_CACHE_SIZE:
+            _PROCESSED_EVENTS.popitem(last=False)  # evict oldest
 
 
 # ---------------------------------------------------------------------------
@@ -152,11 +179,19 @@ async def stripe_webhook(request: Request) -> JSONResponse:
             "signature verification. NEVER deploy without this secret."
         )
 
+    event_id = event.get("id", "") if isinstance(event, dict) else getattr(event, "id", "")
     event_type = event.get("type", "") if isinstance(event, dict) else event.type
     event_data = event.get("data", {}) if isinstance(event, dict) else event.data
     event_obj = event_data.get("object", {}) if isinstance(event_data, dict) else event_data.object
 
-    logger.info("Stripe webhook received: type=%s", event_type)
+    logger.info("Stripe webhook received: id=%s type=%s", event_id, event_type)
+
+    # D-058: Idempotency guard — Stripe retries webhooks on non-2xx responses.
+    # If we already processed this event_id (in-memory cache), return 200 immediately.
+    # This prevents double plan upgrades from webhook retry storms.
+    if event_id and _is_event_processed(event_id):
+        logger.info("Webhook event %s already processed — skipping (idempotency)", event_id)
+        return JSONResponse({"received": True, "type": event_type, "idempotent": True})
 
     # --- Handle checkout.session.completed ---
     if event_type == "checkout.session.completed":
@@ -179,7 +214,12 @@ async def stripe_webhook(request: Request) -> JSONResponse:
             sub_id = session.get("subscription")
             if sub_id and stripe:
                 try:
-                    sub = stripe.Subscription.retrieve(sub_id)
+                    # D-058: Use idempotency key on Stripe API reads to avoid hitting
+                    # duplicate request limits during webhook retries
+                    sub = stripe.Subscription.retrieve(
+                        sub_id,
+                        idempotency_key=f"sub_retrieve_{sub_id}",
+                    )
                     price_id = sub["items"]["data"][0]["price"]["id"]
                 except Exception as exc:
                     logger.warning("Could not retrieve subscription price: %s", exc)
@@ -208,7 +248,12 @@ async def stripe_webhook(request: Request) -> JSONResponse:
         email = None
         if stripe and customer_id:
             try:
-                customer = stripe.Customer.retrieve(customer_id)
+                # D-058: Idempotency key on Customer.retrieve prevents duplicate API
+                # calls causing issues during Stripe retry storms
+                customer = stripe.Customer.retrieve(
+                    customer_id,
+                    idempotency_key=f"cust_retrieve_{customer_id}",
+                )
                 email = customer.get("email")
             except Exception as exc:
                 logger.warning("Could not retrieve customer %s: %s", customer_id, exc)
@@ -227,6 +272,11 @@ async def stripe_webhook(request: Request) -> JSONResponse:
         invoice = event_obj if isinstance(event_obj, dict) else {}
         email = invoice.get("customer_email")
         logger.warning("Payment failed for %s — dunning email not yet implemented", email)
+
+    # D-058: Mark event as successfully processed before returning 200
+    # This ensures idempotent handling if Stripe retries this event
+    if event_id:
+        _mark_event_processed(event_id)
 
     # Always return 200 to acknowledge receipt (Stripe retries on non-2xx)
     return JSONResponse({"received": True, "type": event_type})

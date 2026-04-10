@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     # Default "*" is development-only; credentials are disabled when wildcard is active.
     CORS_ORIGINS: str = "https://zaphscore.zaphenath.app,https://zaphenath.app"
 
+    # --- Sentry (D-060) ---
+    SENTRY_DSN: str = ""                     # DSN from sentry.io project settings
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

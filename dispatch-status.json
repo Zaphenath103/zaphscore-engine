@@ -667,8 +667,10 @@
       "file": "app/api/scans.py",
       "tier": "P1",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787103+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787103+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-067",
@@ -677,8 +679,10 @@
       "file": "app/api/webhook.py",
       "tier": "P0",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787144+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787144+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-068",
@@ -687,8 +691,10 @@
       "file": "app/api/deps.py",
       "tier": "P1",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787151+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787151+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-069",
@@ -697,8 +703,10 @@
       "file": "app/middleware/security_headers.py",
       "tier": "P1",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787155+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787155+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-070",
@@ -707,8 +715,10 @@
       "file": "Dockerfile",
       "tier": "P1",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787159+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787159+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-071",
@@ -717,8 +727,10 @@
       "file": "requirements.txt",
       "tier": "P2",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787162+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787162+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     },
     {
       "id": "D-072",
@@ -727,8 +739,10 @@
       "file": "app/middleware/rate_limit.py",
       "tier": "P1",
       "agent": "boris",
-      "status": "pending",
-      "created_at": "2026-04-10T07:33:21.787166+00:00"
+      "status": "done",
+      "created_at": "2026-04-10T07:33:21.787166+00:00",
+      "fixed_at": "2026-04-10T07:36:19.610699+00:00",
+      "fixed_by": "WAR-4"
     }
   ]
 }
