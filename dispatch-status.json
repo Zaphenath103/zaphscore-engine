@@ -3,7 +3,7 @@
     "title": "Dispatch-50 â€” Tonight's War List vs Snyk",
     "date": "2026-04-09",
     "version": "0.6.0",
-    "last_updated": "2026-04-10T08:13:41Z",
+    "last_updated": "2026-04-10T12:00:00Z",
     "total": 265,
     "auto_refresh_seconds": 30
   },
@@ -729,46 +729,56 @@
       "id": "D-679",
       "tier": "P1",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/iac_scanner.py",
       "title": "Snyk IaC drift detection absent -- we only scan static files not deployed state",
-      "note": "Snyk IaC+ compares Terraform plan output against deployed cloud state to detect drift. iac_scanner.py runs Checkov against static .tf files only; no plan-file ingestion, no Terraform state comparison."
+      "note": "Snyk IaC+ compares Terraform plan output against deployed cloud state to detect drift. iac_scanner.py runs Checkov against static .tf files only; no plan-file ingestion, no Terraform state comparison.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-680",
       "tier": "P1",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/iac_scanner.py",
       "title": "Snyk policy-as-code OPA/Rego support absent -- we have no custom policy engine",
-      "note": "Snyk supports custom OPA Rego policies for IaC rules. iac_scanner.py is Checkov-only with no Rego loader; enterprises cannot express internal compliance rules."
+      "note": "Snyk supports custom OPA Rego policies for IaC rules. iac_scanner.py is Checkov-only with no Rego loader; enterprises cannot express internal compliance rules.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-681",
       "tier": "P1",
       "agent": "thariq",
-      "status": "open",
+      "status": "done",
       "file": "app/api/reports.py",
       "title": "Snyk organization-level aggregate reporting missing -- we report per-scan only",
-      "note": "Snyk org dashboard aggregates findings across all repos with SLA breach alerts. reports.py generates per-scan PDFs; no org-level rollup query, no trend endpoint."
+      "note": "Snyk org dashboard aggregates findings across all repos with SLA breach alerts. reports.py generates per-scan PDFs; no org-level rollup query, no trend endpoint.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-682",
       "tier": "P1",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Snyk resolves transitive deps to depth N -- we cap at manifest-declared deps",
-      "note": "Snyk builds a full dependency graph including transitive dependencies 10+ levels deep. dependency_resolver.py resolves one level from lock files with no recursive transitive traversal beyond what the lock file provides."
+      "note": "Snyk builds a full dependency graph including transitive dependencies 10+ levels deep. dependency_resolver.py resolves one level from lock files with no recursive transitive traversal beyond what the lock file provides.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-683",
       "tier": "P1",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/vuln_scanner.py",
       "title": "Snyk runtime sensor for container monitoring absent -- we have no runtime layer",
-      "note": "Snyk Container runtime sensor reports on vulnerabilities in running containers via eBPF hooks. vuln_scanner.py is a static scan only; no runtime sensor, no running-process vulnerability correlation."
+      "note": "Snyk Container runtime sensor reports on vulnerabilities in running containers via eBPF hooks. vuln_scanner.py is a static scan only; no runtime sensor, no running-process vulnerability correlation.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-684",
@@ -1138,25 +1148,30 @@
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep 2000+ community rules via registry -- we use single --config auto with no rule pinning",
       "note": "Added _SEMGREP_RULESETS list with 11 pinned community registry rulesets (p/security-audit, p/secrets, p/owasp-top-ten, etc.) replacing single --config auto. WAR-1.",
-      "fixed_at": "2026-04-10T12:00:00Z"
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-724",
       "tier": "P0",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep custom rule DSL absent -- we expose no custom-rule interface to customers",
-      "note": "Semgrep YAML DSL lets security teams write custom patterns in minutes. sast_scanner.py has no custom rule loader; customers cannot add organisation-specific patterns without modifying engine source."
+      "note": "Semgrep YAML DSL lets security teams write custom patterns in minutes. sast_scanner.py has no custom rule loader; customers cannot add organisation-specific patterns without modifying engine source.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-725",
       "tier": "P0",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep taint analysis absent -- no taint mode enabled in our Semgrep invocation",
-      "note": "Semgrep taint mode tracks user-controlled data from source to sink across function calls. sast_scanner.py calls semgrep with --config auto which does not guarantee taint rules; the --taint-mode flag and source/sink rules are absent."
+      "note": "Semgrep taint mode tracks user-controlled data from source to sink across function calls. sast_scanner.py calls semgrep with --config auto which does not guarantee taint rules; the --taint-mode flag and source/sink rules are absent.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-726",
@@ -1166,7 +1181,8 @@
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep secrets detection with entropy analysis absent -- secret scanner uses single-pattern regex",
       "note": "Added scan_for_high_entropy_strings() + _shannon_entropy() for entropy-based secret detection (threshold 4.5, min 20 chars). WAR-1.",
-      "fixed_at": "2026-04-10T12:00:00Z"
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-727",
@@ -1820,19 +1836,23 @@
       "id": "D-798",
       "tier": "P0",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/fix_generator.py",
       "title": "Dependabot grouped updates absent -- we generate one fix PR per vulnerability with no grouping",
-      "note": "Dependabot grouped-updates batches compatible dependency upgrades into a single PR. fix_generator.py generates individual fix PRs per finding; repos with 50 outdated packages would get 50 separate PRs causing PR flood and reviewer fatigue."
+      "note": "Dependabot grouped-updates batches compatible dependency upgrades into a single PR. fix_generator.py generates individual fix PRs per finding; repos with 50 outdated packages would get 50 separate PRs causing PR flood and reviewer fatigue.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-799",
       "tier": "P0",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/fix_generator.py",
       "title": "Dependabot auto-merge on passing CI absent -- our fix PRs require manual merge",
-      "note": "Dependabot sets the auto-merge flag on PRs for patch-level updates with green CI. fix_generator.py opens PRs via GitHub API but does not set the auto_merge field; all fix PRs require manual merge."
+      "note": "Dependabot sets the auto-merge flag on PRs for patch-level updates with green CI. fix_generator.py opens PRs via GitHub API but does not set the auto_merge field; all fix PRs require manual merge.",
+      "fixed_at": "2026-04-10T12:00:00Z",
+      "fixed_by": "WAR-3"
     },
     {
       "id": "D-800",
