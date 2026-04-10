@@ -6,3 +6,4 @@ aiohttp==3.11.11
 pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
+PyJWT==2.9.0

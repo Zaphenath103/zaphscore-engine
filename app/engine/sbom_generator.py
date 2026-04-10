@@ -11,6 +11,32 @@ from app.models.schemas import Finding, FindingType, Severity
 
 logger = logging.getLogger("zse.engine.sbom_generator")
 
+# D-027: Component type classification — ecosystem → CycloneDX component type
+# "library" is correct for most deps; "framework" and "container" are special cases.
+_COMPONENT_TYPE_MAP: dict[str, str] = {
+    "npm": "library",
+    "pypi": "library",
+    "go": "library",
+    "golang": "library",
+    "cargo": "library",
+    "crates.io": "library",
+    "maven": "library",
+    "nuget": "library",
+    "rubygems": "library",
+    "gem": "library",
+    "packagist": "library",
+    "composer": "library",
+    "docker": "container",
+    "oci": "container",
+}
+
+# D-027: Known framework packages that should be classified as "framework"
+_FRAMEWORK_NAMES: frozenset[str] = frozenset({
+    "django", "flask", "fastapi", "rails", "laravel", "spring", "express",
+    "nextjs", "next", "nuxt", "angular", "react", "vue", "svelte",
+    "symfony", "codeigniter", "gin", "echo", "fiber",
+})
+
 # Ecosystem → PURL prefix mapping
 _PURL_ECOSYSTEM_MAP: dict[str, str] = {
     "npm": "pkg:npm/",
@@ -42,15 +68,39 @@ _KNOWN_DEPRECATED: set[str] = {
 
 
 def _build_purl(name: str, version: str, ecosystem: str) -> str:
-    """Build a Package URL (purl) from dependency metadata."""
-    eco_lower = ecosystem.lower() if ecosystem else ""
+    """Build a Package URL (purl) from dependency metadata.
+
+    D-027: Ensures purl completeness — every component has a valid, typed purl.
+    Follows the PURL spec: pkg:<type>/<namespace>/<name>@<version>
+    """
+    eco_lower = ecosystem.lower().strip() if ecosystem else ""
     prefix = _PURL_ECOSYSTEM_MAP.get(eco_lower, f"pkg:{eco_lower}/" if eco_lower else "pkg:generic/")
 
-    # Sanitise the name for purl format
-    safe_name = name.strip().lower()
-    if version:
+    # Sanitise: lowercase, strip leading/trailing whitespace, URL-encode @ in name
+    safe_name = name.strip().lower().replace(" ", "-")
+
+    # Maven uses groupId/artifactId format — split on ":" if present
+    if eco_lower == "maven" and ":" in safe_name:
+        group, artifact = safe_name.split(":", 1)
+        safe_name = f"{group}/{artifact}"
+
+    if version and version not in ("unknown", "0.0.0", ""):
         return f"{prefix}{safe_name}@{version}"
     return f"{prefix}{safe_name}"
+
+
+def _classify_component_type(name: str, ecosystem: str) -> str:
+    """D-027: Return the CycloneDX component type for a dependency.
+
+    Returns "framework" for known framework packages, "container" for
+    docker/OCI ecosystems, and "library" for everything else.
+    """
+    eco_lower = ecosystem.lower().strip() if ecosystem else ""
+    if eco_lower in ("docker", "oci"):
+        return "container"
+    if name.strip().lower() in _FRAMEWORK_NAMES:
+        return "framework"
+    return _COMPONENT_TYPE_MAP.get(eco_lower, "library")
 
 
 def _get_repo_name(repo_dir: str) -> str:
@@ -80,16 +130,23 @@ def _generate_cyclonedx(repo_name: str, dependencies: list[dict]) -> dict:
 
         purl = _build_purl(name, version, ecosystem)
 
+        # D-027: Use type classifier — library/framework/container
+        component_type = _classify_component_type(name, ecosystem)
+
         component: dict = {
-            "type": "library",
+            "type": component_type,
             "name": name,
             "version": version or "0.0.0",
             "purl": purl,
             "scope": "optional" if optional else "required",
         }
 
+        # D-027: Always include licenses field — use NOASSERTION when unknown
+        # so consumers know the field was checked, not omitted by mistake.
         if license_id:
             component["licenses"] = [{"license": {"id": license_id}}]
+        else:
+            component["licenses"] = [{"license": {"id": "NOASSERTION"}}]
 
         components.append(component)
         dep_refs.append({"ref": purl, "dependsOn": []})

@@ -16,6 +16,7 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from starlette.responses import StreamingResponse
 
+from app.api.deps import CurrentUser
 from app.models import database as db
 from app.models.schemas import (
     Finding,
@@ -77,9 +78,16 @@ async def _run_scan_background(scan_id: uuid.UUID, repo_url: str, branch: str) -
 
 @router.post("", response_model=ScanResponse, status_code=201)
 async def submit_scan(
-    body: ScanRequest, request: Request, background_tasks: BackgroundTasks
+    body: ScanRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    current_user: CurrentUser,  # D-003: auth gate — 401 if no valid JWT
 ) -> ScanResponse:
-    """Queue a new security scan for a GitHub repository."""
+    """Queue a new security scan for a GitHub repository.
+
+    Requires a valid Supabase JWT in the Authorization: Bearer header.
+    Unauthenticated requests are rejected with HTTP 401 before any pipeline runs.
+    """
     client_ip = request.client.host if request.client else "unknown"
     _check_rate_limit(client_ip)
 

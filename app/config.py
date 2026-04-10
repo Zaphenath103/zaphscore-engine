@@ -66,3 +66,63 @@ class Settings(BaseSettings):
 
 # Singleton — import this everywhere
 settings = Settings()
+
+
+# ---------------------------------------------------------------------------
+# D-033: Startup env var validation — fail fast with clear error messages
+# ---------------------------------------------------------------------------
+
+def validate_required_env_vars(strict: bool = False) -> list[str]:
+    """Check that critical env vars are set. Returns list of warnings.
+
+    Args:
+        strict: If True, raises RuntimeError on missing P0 vars (use in production).
+                If False, only logs warnings (development-safe default).
+
+    P0 (revenue-critical — must be set in production):
+        STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_KEY
+
+    P1 (security-critical — strongly recommended):
+        SUPABASE_JWT_SECRET
+    """
+    import logging
+    import os
+    logger = logging.getLogger("zse.config")
+
+    warnings: list[str] = []
+
+    # P0: Revenue gates — app must not start in production without these
+    p0_vars = [
+        ("STRIPE_SECRET_KEY",    settings.STRIPE_SECRET_KEY,    "Stripe payments will fail"),
+        ("STRIPE_WEBHOOK_SECRET", settings.STRIPE_WEBHOOK_SECRET, "Stripe webhooks will fail — no revenue events"),
+        ("SUPABASE_URL",         settings.SUPABASE_URL,         "Database unavailable in Postgres mode"),
+        ("SUPABASE_KEY",         settings.SUPABASE_KEY,         "Database auth will fail"),
+    ]
+
+    # P1: Security-critical — auth and JWT verification
+    p1_vars = [
+        ("SUPABASE_JWT_SECRET", os.environ.get("SUPABASE_JWT_SECRET", ""),
+         "JWT signatures NOT verified — auth gate is permissive"),
+    ]
+
+    missing_p0 = []
+    for name, value, consequence in p0_vars:
+        if not value:
+            msg = f"[P0] Missing env var: {name} — {consequence}"
+            logger.warning(msg)
+            warnings.append(msg)
+            missing_p0.append(name)
+
+    for name, value, consequence in p1_vars:
+        if not value:
+            msg = f"[P1] Missing env var: {name} — {consequence}"
+            logger.warning(msg)
+            warnings.append(msg)
+
+    if strict and missing_p0:
+        raise RuntimeError(
+            f"FATAL: Missing required environment variables: {', '.join(missing_p0)}. "
+            "Set these in Vercel/Railway dashboard before starting in production."
+        )
+
+    return warnings

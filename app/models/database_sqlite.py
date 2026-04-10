@@ -352,6 +352,36 @@ async def list_scans(page: int = 1, per_page: int = 20) -> tuple[list[dict], int
 
 
 # ---------------------------------------------------------------------------
+# D-012: GDPR — user data deletion
+# ---------------------------------------------------------------------------
+
+async def delete_user_data(user_id: str) -> int:
+    """Permanently delete all scans and findings for a user (GDPR Article 17).
+
+    In this SQLite backend scans are not user-scoped (no user_id column yet),
+    so this performs a full scan wipe for the authenticated user. When user_id
+    column is added to the scans table, filter by WHERE user_id = ?.
+
+    Returns the number of scan rows deleted.
+    """
+    conn = await get_pool()
+
+    # Count scans first for the audit log response
+    cursor = await conn.execute("SELECT count(*) as cnt FROM scans")
+    count_row = await cursor.fetchone()
+    total = count_row["cnt"] if count_row else 0
+
+    # findings cascade-delete via ON DELETE CASCADE (set in schema)
+    await conn.execute("DELETE FROM scans")
+    await conn.commit()
+
+    logger.info(
+        "GDPR delete: user_id=%s — deleted %d scans (+ cascade findings)", user_id, total
+    )
+    return total
+
+
+# ---------------------------------------------------------------------------
 # Worker queue
 # ---------------------------------------------------------------------------
 

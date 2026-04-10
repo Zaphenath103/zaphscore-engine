@@ -47,6 +47,17 @@ async def lifespan(app: FastAPI):
 
     logger.info("ZSE starting up... PORT=%s", os.environ.get("PORT", "not set"))
 
+    # D-033: Validate required env vars — log warnings, fail-fast in production
+    try:
+        from app.config import validate_required_env_vars
+        is_prod = os.environ.get("VERCEL") or os.environ.get("RAILWAY_ENVIRONMENT")
+        warnings = validate_required_env_vars(strict=bool(is_prod))
+        if warnings:
+            logger.warning("Env var check: %d warning(s) found", len(warnings))
+    except RuntimeError as e:
+        logger.critical("Startup aborted: %s", e)
+        raise
+
     # --- Database (best-effort, non-fatal) ---
     _db_url = settings.DATABASE_URL
     _skip_postgres = "localhost" in _db_url or "127.0.0.1" in _db_url
@@ -134,6 +145,14 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
+# D-014: Security headers — X-Content-Type-Options, X-Frame-Options, CSP, etc.
+try:
+    from app.middleware.security_headers import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    logger.info("Security headers middleware loaded")
+except Exception as e:
+    logger.error("Security headers middleware failed to load: %s", e)
+
 # D-005: Rate limiting middleware — protects scan endpoints from DoS
 try:
     from app.middleware.rate_limit import RateLimitMiddleware
@@ -160,6 +179,12 @@ try:
     app.include_router(waitlist_router)
 except Exception as e:
     logger.error("Failed to load waitlist router: %s", e)
+
+try:
+    from app.api.user import router as user_router  # D-012: GDPR delete
+    app.include_router(user_router)
+except Exception as e:
+    logger.error("Failed to load user router: %s", e)
 
 try:
     from app.api.webhook import router as webhook_router

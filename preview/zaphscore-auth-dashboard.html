@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — Auth + Dashboard Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F8F7F4; --surface:#FFFFFF; --border:#D1CFC9; --border-strong:#A09D97;
+  --text:#1A1917; --muted:#6B6860; --faint:#9B9890;
+  --red:#C41C1C; --red-bg:#FEF2F2; --red-border:#FECACA;
+  --amber:#B45309; --amber-bg:#FFFBEB; --amber-border:#FDE68A;
+  --green:#166534; --green-bg:#F0FDF4; --green-border:#BBF7D0;
+  --dark:#0F0F0E; --dark2:#1A1917; --dark3:#252320; --dark4:#2E2C29;
+  --mono:'JetBrains Mono','Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;}
+.screen{display:none;} .screen.active{display:block;}
+
+/* DEV BAR */
+.dev-bar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#7B2FF7;padding:6px 16px;display:flex;align-items:center;gap:10px;}
+.dev-bar span{color:white;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+.dev-btn{padding:3px 12px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.4);background:transparent;color:white;cursor:pointer;transition:all .15s;}
+.dev-btn.active{background:white;color:#7B2FF7;}
+
+/* ══════════ LOGIN ══════════ */
+#login{min-height:100vh;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:70px 20px 40px;position:relative;overflow:hidden;}
+#login::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(196,28,28,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(196,28,28,.05) 1px,transparent 1px);background-size:44px 44px;}
+#login::after{content:'';position:absolute;top:15%;left:50%;transform:translate(-50%,-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(196,28,28,.1) 0%,transparent 65%);pointer-events:none;}
+.login-card{position:relative;z-index:1;width:100%;max-width:440px;}
+.login-brand{text-align:center;margin-bottom:36px;}
+.login-logo{font-size:30px;font-weight:800;color:#F8F7F4;letter-spacing:-.02em;margin-bottom:6px;}
+.login-logo .z{color:var(--red);}
+.login-tagline{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#444240;}
+.login-box{background:var(--dark2);border:1px solid #2A2825;padding:32px;}
+
+/* Login steps */
+.login-step{display:none;} .login-step.active{display:block;}
+.step-header{margin-bottom:24px;}
+.step-title{font-size:15px;font-weight:700;color:#F8F7F4;margin-bottom:4px;}
+.step-sub{font-size:10px;color:#5A5855;line-height:1.6;}
+.step-num{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4A4845;margin-bottom:16px;}
+.step-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;background:#2A2825;color:#6B6860;}
+.step-dot.done{background:var(--green);color:white;}
+.step-dot.active{background:var(--red);color:white;}
+.step-line{width:20px;height:1px;background:#2A2825;}
+
+.f-label{display:block;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6B6860;margin-bottom:8px;}
+.f-input{width:100%;padding:13px 14px;background:var(--dark3);border:1px solid #2E2C29;color:#F8F7F4;font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;margin-bottom:14px;}
+.f-input:focus{border-color:var(--red);}
+.f-input::placeholder{color:#3A3835;}
+.f-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.f-link{font-size:9px;color:var(--red);text-decoration:none;}
+
+.login-btn{width:100%;padding:13px;background:var(--red);color:white;border:none;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px;}
+.login-btn:hover{background:#A11919;}
+.login-btn.loading{background:#3A1A1A;color:#6B3030;cursor:not-allowed;position:relative;overflow:hidden;}
+.login-btn.loading::after{content:'';position:absolute;left:-100%;top:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(196,28,28,.3),transparent);animation:shimmer 1s infinite;}
+@keyframes shimmer{to{left:100%;}}
+
+.divider{display:flex;align-items:center;gap:10px;margin:18px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#2A2825;}
+.divider span{font-size:9px;color:#3A3835;}
+.sso-btn{width:100%;padding:11px;background:transparent;border:1px solid #2E2C29;color:#9B9890;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.sso-btn:hover{border-color:#4A4845;color:#F8F7F4;}
+.gh-icon{width:14px;height:14px;fill:currentColor;flex-shrink:0;}
+
+.login-foot{text-align:center;margin-top:20px;font-size:10px;color:#3A3835;}
+.login-foot a{color:var(--red);text-decoration:none;}
+.security-note{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:28px;font-size:9px;color:#2A2825;letter-spacing:.06em;}
+
+/* ══════════ DASHBOARD ══════════ */
+#dashboard{min-height:100vh;padding-top:36px;}
+
+.dash-nav{background:var(--dark);border-bottom:2px solid var(--red);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:36px;z-index:100;}
+.dash-brand{font-size:17px;font-weight:800;color:#F8F7F4;letter-spacing:-.01em;}
+.dash-brand .z{color:var(--red);}
+.nav-tabs{display:flex;}
+.ntab{padding:0 14px;height:52px;display:flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5A5855;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;margin-bottom:-2px;user-select:none;}
+.ntab:hover{color:#9B9890;}
+.ntab.active{color:#F8F7F4;border-bottom-color:var(--red);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.plan-badge{padding:3px 10px;background:var(--red);color:white;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;}
+.user-pill{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:1px solid #2A2825;cursor:pointer;transition:border-color .15s;}
+.user-pill:hover{border-color:#4A4845;}
+.avatar{width:26px;height:26px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;}
+.user-name{font-size:10px;color:#9B9890;}
+.notif-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid #2A2825;cursor:pointer;position:relative;transition:border-color .15s;}
+.notif-btn:hover{border-color:#4A4845;}
+.notif-btn svg{width:13px;height:13px;fill:#6B6860;}
+.notif-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1px solid var(--dark);}
+
+.dash-body{max-width:1260px;margin:0 auto;padding:24px 24px 60px;}
+
+/* TAB PANELS */
+.tab-panel{display:none;} .tab-panel.active{display:block;}
+
+/* WELCOME BAND */
+.welcome{background:var(--dark);border:1px solid #252320;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+.w-left .greet{font-size:10px;color:#4A4845;margin-bottom:2px;}
+.w-left .wname{font-size:18px;font-weight:700;color:#F8F7F4;}
+.w-right{display:flex;align-items:center;gap:10px;}
+.w-meta{font-size:9px;color:#4A4845;text-align:right;line-height:1.6;}
+.w-meta span{color:#6B6860;}
+.new-scan-btn{padding:10px 18px;background:var(--red);color:white;border:none;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;}
+.new-scan-btn:hover{background:#A11919;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:16px 18px;cursor:default;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--border-strong);}
+.stat-label{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.stat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sd-r{background:var(--red);} .sd-g{background:#16A34A;} .sd-a{background:#D97706;} .sd-b{background:#2563EB;}
+.stat-val{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;margin-bottom:4px;}
+.sv-g{color:var(--green);} .sv-r{color:var(--red);} .sv-a{color:var(--amber);}
+.stat-sub{font-size:9px;color:var(--faint);}
+.stat-trend{display:inline-flex;align-items:center;gap:3px;font-size:8px;font-weight:700;padding:1px 5px;margin-left:4px;}
+.st-up{background:var(--green-bg);color:var(--green);} .st-dn{background:var(--red-bg);color:var(--red);}
+
+/* TOOLTIP */
+[data-tip]{position:relative;cursor:help;}
+[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--dark);color:#F8F7F4;font-size:9px;line-height:1.5;padding:8px 12px;white-space:nowrap;border:1px solid #333;pointer-events:none;opacity:0;transition:opacity .2s;z-index:500;max-width:260px;white-space:normal;text-align:left;}
+[data-tip]:hover::after{opacity:1;}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 360px;gap:16px;}
+
+/* SECTION HEADERS */
+.sh{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.sh::after{content:'';flex:1;height:1px;background:var(--border);margin-left:10px;}
+.sh-action{font-size:9px;color:var(--red);cursor:pointer;margin-left:10px;white-space:nowrap;text-decoration:none;flex-shrink:0;}
+.sh-action:hover{text-decoration:underline;}
+
+/* SCAN ROWS — expandable */
+.scans-panel{background:var(--surface);border:1px solid var(--border);}
+.scan-row{border-bottom:1px solid var(--border);transition:background .15s;}
+.scan-row:last-child{border-bottom:none;}
+.scan-row-head{display:grid;grid-template-columns:1fr 60px 90px 130px 80px 70px;align-items:center;padding:12px 14px;cursor:pointer;gap:8px;user-select:none;}
+.scan-row-head:hover{background:var(--bg);}
+.scan-row.expanded .scan-row-head{background:#F0EEE9;}
+.scan-col-label{font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 60px 90px 130px 80px 70px;gap:8px;}
+.repo-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.repo-name{font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.repo-branch{font-size:9px;color:var(--faint);}
+.chevron{color:var(--faint);transition:transform .25s;font-style:normal;font-size:10px;text-align:right;}
+.scan-row.expanded .chevron{transform:rotate(90deg);}
+
+.score-pill{display:inline-flex;align-items:center;justify-content:center;width:40px;height:24px;font-size:11px;font-weight:800;border:1px solid;}
+.sp-h{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
+.sp-m{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border);}
+.sp-l{background:var(--red-bg);color:var(--red);border-color:var(--red-border);}
+
+.status-tag{display:inline-block;padding:2px 8px;font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.st-ok{background:var(--green-bg);color:var(--green);}
+.st-run{background:var(--amber-bg);color:var(--amber);}
+.st-fail{background:var(--red-bg);color:var(--red);}
+.st-q{background:#EFF6FF;color:#1D4ED8;}
+
+.fc-row{display:flex;gap:4px;}
+.fc{font-size:9px;font-weight:700;padding:2px 5px;}
+.fc-c{background:#FEF2F2;color:#991B1B;}
+.fc-h{background:#FFF7ED;color:#9A3412;}
+.fc-m{background:#FFFBEB;color:#92400E;}
+.fc-l{background:#F0FDF4;color:#14532D;}
+
+.ts{font-size:10px;color:var(--faint);}
+
+/* EXPANDED DETAIL */
+.scan-detail{display:none;border-top:1px solid var(--border);background:#FAFAF8;padding:20px 16px;}
+.scan-row.expanded .scan-detail{display:block;}
+.scan-detail-grid{display:grid;grid-template-columns:1fr 280px;gap:20px;}
+
+/* 12 LAYER BREAKDOWN */
+.layers-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.layer-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);}
+.layer-icon{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.li-pass{background:#16A34A;} .li-warn{background:#D97706;} .li-fail{background:var(--red);} .li-skip{background:#D1CFC9;}
+.layer-name{font-size:9px;font-weight:600;flex:1;}
+.layer-score{font-size:9px;font-weight:700;color:var(--muted);}
+.layer-score.good{color:var(--green);} .layer-score.warn{color:var(--amber);} .layer-score.bad{color:var(--red);}
+
+/* MINI FINDINGS */
+.mini-finding{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.mini-finding:last-child{border-bottom:none;}
+.mini-finding:hover .mf-title{color:var(--red);}
+.mf-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.mfd-c{background:#991B1B;} .mfd-h{background:#C2410C;} .mfd-m{background:#D97706;} .mfd-l{background:#16A34A;}
+.mf-body{flex:1;min-width:0;}
+.mf-title{font-size:10px;font-weight:600;margin-bottom:2px;transition:color .15s;}
+.mf-meta{font-size:9px;color:var(--faint);display:flex;gap:6px;flex-wrap:wrap;}
+.mf-fix{font-size:9px;color:var(--green);margin-top:3px;display:none;}
+.mini-finding.open .mf-fix{display:block;}
+.mf-impact{font-size:9px;color:var(--amber);margin-top:2px;display:none;line-height:1.5;}
+.mini-finding.open .mf-impact{display:block;}
+
+/* RIGHT SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:16px;}
+
+/* SCORE GAUGE */
+.gauge-panel{background:var(--surface);border:1px solid var(--border);padding:20px;text-align:center;}
+.gauge-wrap{position:relative;width:160px;height:90px;margin:0 auto 12px;}
+.gauge-svg{width:160px;height:90px;}
+.gauge-val{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;}
+.gauge-label{font-size:9px;color:var(--faint);margin-top:2px;}
+.score-meaning{background:var(--green-bg);border:1px solid var(--green-border);padding:10px 12px;margin-top:12px;text-align:left;}
+.score-meaning p{font-size:10px;color:var(--green);line-height:1.6;}
+.score-meaning .sm-head{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+
+/* PLAN CARD */
+.plan-card{background:var(--dark);border:1px solid #252320;padding:18px;}
+.pc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.pc-name{font-size:12px;font-weight:700;color:#F8F7F4;letter-spacing:.06em;text-transform:uppercase;}
+.pc-tier{font-size:9px;color:#4A4845;margin-top:2px;}
+.pc-badge{padding:2px 8px;background:var(--red);font-size:8px;font-weight:700;letter-spacing:.12em;color:white;text-transform:uppercase;}
+.pc-renews{font-size:9px;color:#3A3835;margin-bottom:12px;}
+.pc-renews span{color:#6B6860;}
+.usage-row{margin-bottom:10px;}
+.usage-top{display:flex;justify-content:space-between;font-size:9px;color:#5A5855;margin-bottom:5px;}
+.usage-top span:last-child{color:#9B9890;}
+.usage-track{height:3px;background:#1A1917;}
+.usage-fill{height:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+.uf-red{background:var(--red);} .uf-amber{background:#D97706;}
+.pc-includes{font-size:9px;color:#3A3835;line-height:1.7;margin-top:12px;padding-top:12px;border-top:1px solid #1A1917;}
+.pc-includes .inc{color:#5A5855;} .pc-includes .no-inc{color:#2A2825;text-decoration:line-through;}
+.pc-actions{display:flex;gap:8px;margin-top:14px;}
+.pc-btn{flex:1;padding:8px;border:1px solid #252320;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:#6B6860;cursor:pointer;transition:all .15s;}
+.pc-btn:hover{border-color:#4A4845;color:#9B9890;}
+.pc-btn.up{background:var(--red);border-color:var(--red);color:white;}
+.pc-btn.up:hover{background:#A11919;}
+
+/* ACTIVITY FEED */
+.activity-panel{background:var(--surface);border:1px solid var(--border);padding:16px;}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.act-icon{width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;}
+.ai-scan{background:var(--blue-bg, #EFF6FF);} .ai-alert{background:var(--red-bg);} .ai-fix{background:var(--green-bg);}
+.act-body{flex:1;}
+.act-text{font-size:10px;line-height:1.5;margin-bottom:2px;}
+.act-text strong{font-weight:700;}
+.act-ts{font-size:9px;color:var(--faint);}
+
+/* API PANEL */
+.api-panel{background:var(--surface);border:1px solid var(--border);padding:16px;}
+.api-explain{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
+.api-key-row{display:flex;gap:8px;margin-bottom:10px;}
+.api-key-val{flex:1;padding:9px 11px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;}
+.api-copy-btn{padding:9px 12px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.api-copy-btn:hover{border-color:var(--red);color:var(--red);}
+.api-stat-row{display:flex;gap:12px;}
+.api-stat{flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--border);text-align:center;}
+.api-stat .asv{font-size:16px;font-weight:800;margin-bottom:2px;}
+.api-stat .asl{font-size:8px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;}
+
+/* SCORE TREND (bigger) */
+.trend-panel{background:var(--surface);border:1px solid var(--border);padding:16px;}
+.trend-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.trend-score{font-size:24px;font-weight:800;}
+.trend-change{font-size:10px;padding:2px 8px;background:var(--green-bg);color:var(--green);font-weight:700;}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:52px;margin-bottom:4px;}
+.spark-bar{flex:1;background:var(--red);opacity:.25;transition:opacity .2s;border-radius:2px 2px 0 0;cursor:pointer;position:relative;}
+.spark-bar:hover{opacity:.7;}
+.spark-bar.latest{opacity:1;}
+.spark-bar .tip{display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--dark);color:#F8F7F4;font-size:8px;padding:2px 6px;white-space:nowrap;pointer-events:none;}
+.spark-bar:hover .tip{display:block;}
+.spark-labels{display:flex;justify-content:space-between;font-size:8px;color:var(--faint);}
+
+/* SCORE MATRIX CHARS */
+.schar{
+  display:inline-block;
+  color:#F8F7F4;
+  font-weight:800;
+  transition:color .1s;
+  min-width:0.6em;
+  text-align:center;
+}
+.schar.scrambling{ color:var(--red); }
+.schar.settling{ color:#C8C6C0; }
+
+/* SECURITY BADGES */
+.sec-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;
+  border:1px solid #1E1C19;
+  background:#141210;
+}
+.sec-icon{ font-size:11px;line-height:1; }
+.sec-text{
+  font-size:9px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:#5A5855;
+}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#F8F7F4;padding:10px 16px;font-size:10px;font-family:var(--mono);border:1px solid #333;transform:translateY(60px);opacity:0;transition:all .3s;z-index:9998;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ANIMATED COUNTER */
+.counting{transition:color .3s;}
+</style>
+</head>
+<body>
+
+<div class="dev-bar">
+  <span>Preview:</span>
+  <button class="dev-btn active" onclick="show('login',this)">Login Screen</button>
+  <button class="dev-btn" onclick="show('dashboard',this)">Paid Dashboard</button>
+</div>
+
+<!-- ══════════════════════════ LOGIN ══════════════════════════ -->
+<div id="login" class="screen active">
+<div style="min-height:100vh;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:70px 20px 40px;position:relative;overflow:hidden;">
+<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(196,28,28,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(196,28,28,.05) 1px,transparent 1px);background-size:44px 44px;"></div>
+<div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(196,28,28,.1),transparent 65%);pointer-events:none;"></div>
+<div style="position:relative;z-index:1;width:100%;max-width:440px;">
+
+  <div style="text-align:center;margin-bottom:32px;">
+    <!-- ANIMATED LOGO -->
+    <div id="loginLogo" style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:0;line-height:1;">
+      <span style="color:var(--red);display:inline-block;" id="lz">Z</span>
+      <span style="color:#F8F7F4;display:inline-block;" id="laph">aph</span>
+      <span style="color:#3A3835;display:inline-block;margin:0 3px;">[</span>
+      <span style="display:inline-flex;gap:1px;" id="scoreLetters">
+        <span class="schar" data-final="S">S</span>
+        <span class="schar" data-final="c">c</span>
+        <span class="schar" data-final="o">o</span>
+        <span class="schar" data-final="r">r</span>
+        <span class="schar" data-final="e">e</span>
+      </span>
+      <span style="color:#3A3835;display:inline-block;margin:0 3px;">]</span>
+    </div>
+    <!-- 12-LAYER TAGLINE — visible, animated in -->
+    <div id="tagline12" style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#6B6860;opacity:0;transform:translateY(6px);transition:all .7s ease .4s;">
+      12&#8209;Layer&nbsp;&nbsp;Security&nbsp;&nbsp;Intelligence
+    </div>
+    <!-- SCAN LAYERS TICKER -->
+    <div style="margin-top:10px;overflow:hidden;height:16px;" id="layerTickerWrap">
+      <div id="layerTicker" style="font-size:9px;color:#2E2C29;letter-spacing:.12em;text-transform:uppercase;transition:transform .4s ease;white-space:nowrap;text-align:center;"></div>
+    </div>
+  </div>
+
+  <div style="background:var(--dark2);border:1px solid #2A2825;padding:32px;">
+    <!-- Step indicators -->
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:24px;">
+      <div id="sd1" style="width:20px;height:20px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;flex-shrink:0;">1</div>
+      <div style="flex:1;height:1px;background:#252320;"></div>
+      <div id="sd2" style="width:20px;height:20px;border-radius:50%;background:#252320;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#3A3835;flex-shrink:0;">2</div>
+      <div style="flex:1;height:1px;background:#252320;"></div>
+      <div id="sd3" style="width:20px;height:20px;border-radius:50%;background:#252320;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#3A3835;flex-shrink:0;">✓</div>
+      <div style="margin-left:8px;font-size:9px;color:#3A3835;letter-spacing:.08em;" id="step-label">Step 1 of 2 — Email</div>
+    </div>
+
+    <!-- STEP 1: Email -->
+    <div id="ls1" class="login-step active">
+      <div style="margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;color:#F8F7F4;margin-bottom:6px;">Welcome back.</div>
+        <div style="font-size:10px;color:#5A5855;line-height:1.6;">ZaphScore accounts are for Pro and Enterprise subscribers. Your data, your security reports — no one else's.</div>
+      </div>
+      <label class="f-label">Email address</label>
+      <input type="email" class="f-input" id="emailInput" placeholder="you@company.com" value="mario@zaphenath.com">
+      <button class="login-btn" onclick="goStep2()">Continue →</button>
+      <div class="divider"><span>or</span></div>
+      <button class="sso-btn" onclick="loginLoading()">
+        <svg class="gh-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Continue with GitHub
+      </button>
+    </div>
+
+    <!-- STEP 2: Password -->
+    <div id="ls2" class="login-step">
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;color:#6B6860;margin-bottom:4px;">Signing in as</div>
+        <div style="font-size:14px;font-weight:700;color:#F8F7F4;" id="emailDisplay">mario@zaphenath.com</div>
+        <div style="margin-top:8px;font-size:10px;color:#5A5855;line-height:1.6;">Enter your password. We never store it in plain text — bcrypt hashed, always.</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <label class="f-label" style="margin-bottom:0;">Password</label>
+        <a href="#" class="f-link" style="font-size:9px;">Forgot password?</a>
+      </div>
+      <input type="password" class="f-input" id="passInput" placeholder="••••••••••••" value="securepassword">
+      <button class="login-btn" id="signInBtn" onclick="loginLoading()">▶ Sign In</button>
+      <button onclick="goStep1()" style="width:100%;padding:8px;background:transparent;border:1px solid #2A2825;font-family:var(--mono);font-size:9px;color:#4A4845;cursor:pointer;margin-top:8px;transition:all .2s;" onmouseover="this.style.borderColor='#4A4845';this.style.color='#9B9890'" onmouseout="this.style.borderColor='#2A2825';this.style.color='#4A4845'">← Back</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:18px;font-size:10px;color:#3A3835;">
+    No account? <a href="#" style="color:var(--red);text-decoration:none;">Start free scan</a>
+    · <a href="#" style="color:var(--red);text-decoration:none;">View pricing</a>
+  </div>
+  <!-- SECURITY BADGES — visible, animated in -->
+  <div id="secBadges" style="display:flex;align-items:center;justify-content:center;gap:0;margin-top:28px;opacity:0;transform:translateY(8px);transition:all .6s ease .9s;">
+    <div class="sec-badge">
+      <span class="sec-icon">🔒</span>
+      <span class="sec-text">256-bit TLS</span>
+    </div>
+    <span style="color:#252320;padding:0 8px;">·</span>
+    <div class="sec-badge">
+      <span class="sec-icon">🔑</span>
+      <span class="sec-text">bcrypt passwords</span>
+    </div>
+    <span style="color:#252320;padding:0 8px;">·</span>
+    <div class="sec-badge">
+      <span class="sec-icon">🗑</span>
+      <span class="sec-text">Zero data retention</span>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ══════════════════════════ DASHBOARD ══════════════════════════ -->
+<div id="dashboard" class="screen">
+  <nav class="dash-nav">
+    <div class="dash-brand"><span style="color:var(--red);">Z</span>aphScore</div>
+    <div class="nav-tabs">
+      <div class="ntab active" onclick="switchTab('overview',this)">Overview</div>
+      <div class="ntab" onclick="switchTab('scans',this)">Scans</div>
+      <div class="ntab" onclick="switchTab('findings',this)">Findings</div>
+      <div class="ntab" onclick="switchTab('api',this)">API</div>
+    </div>
+    <div class="nav-right">
+      <div class="notif-btn" onclick="toast('3 new critical findings detected across your repos')">
+        <svg viewBox="0 0 24 24"><path d="M12 22a2 2 0 01-2-2h4a2 2 0 01-2 2zm6-6V11a6 6 0 10-12 0v5l-2 2h16l-2-2z"/></svg>
+        <div class="notif-dot"></div>
+      </div>
+      <div class="plan-badge">Pro</div>
+      <div class="user-pill">
+        <div class="avatar">M</div>
+        <span class="user-name">mario@zaphenath</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dash-body">
+
+    <!-- ── OVERVIEW TAB ── -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="welcome">
+        <div class="w-left">
+          <div class="greet">Good afternoon —</div>
+          <div class="wname">Mario Martinez</div>
+        </div>
+        <div class="w-right">
+          <div class="w-meta">
+            <span>Pro Plan</span> · renews May 9, 2026<br>
+            $19/mo · 36 scans remaining
+          </div>
+          <button class="new-scan-btn" onclick="toast('Opening new scan modal…')">+ New Scan</button>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card" data-tip="Total scans run this billing cycle (Apr 9 – May 9). Pro plan includes 50/month.">
+          <div class="stat-label"><span class="stat-dot sd-b"></span>Scans this month</div>
+          <div class="stat-val" id="c1">14</div>
+          <div class="stat-sub">of 50 included · <strong>36 remaining</strong></div>
+        </div>
+        <div class="stat-card" data-tip="Average ZaphScore across all your repos. Higher = more secure. 80+ is considered healthy for a production codebase.">
+          <div class="stat-label"><span class="stat-dot sd-g"></span>Avg security score</div>
+          <div class="stat-val sv-g" id="c2">73</div>
+          <div class="stat-sub">+8 pts vs last month <span class="stat-trend st-up">↑</span></div>
+        </div>
+        <div class="stat-card" data-tip="Critical findings = immediate breach risk. These are active vulnerabilities (known CVEs, hardcoded secrets, SQL injection) in production code.">
+          <div class="stat-label"><span class="stat-dot sd-r"></span>Open criticals</div>
+          <div class="stat-val sv-r" id="c3">3</div>
+          <div class="stat-sub">across 2 repos · needs action</div>
+        </div>
+        <div class="stat-card" data-tip="Repositories scanned this month. Pro allows up to 10 private repos.">
+          <div class="stat-label"><span class="stat-dot sd-a"></span>Repos tracked</div>
+          <div class="stat-val" id="c4">7</div>
+          <div class="stat-sub">last scan 2h ago</div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div>
+          <!-- RECENT SCANS -->
+          <div class="sh">Recent Scans <a class="sh-action" onclick="switchTab('scans',document.querySelectorAll('.ntab')[1])">View all →</a></div>
+          <div class="scans-panel">
+            <div class="scan-col-label">
+              <span>Repository</span><span>Score</span><span>Status</span><span>Findings</span><span>Scanned</span><span></span>
+            </div>
+
+            <!-- ROW 1 -->
+            <div class="scan-row" id="sr1">
+              <div class="scan-row-head" onclick="toggleRow('sr1')">
+                <div class="repo-cell"><span class="repo-name">zaphscore-engine</span><span class="repo-branch">branch: main</span></div>
+                <span class="score-pill sp-h">87</span>
+                <span class="status-tag st-ok">Complete</span>
+                <div class="fc-row"><span class="fc fc-c">0C</span><span class="fc fc-h">1H</span><span class="fc fc-m">3M</span><span class="fc fc-l">7L</span></div>
+                <span class="ts">2h ago</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="scan-detail">
+                <div class="scan-detail-grid">
+                  <div>
+                    <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;">12-Layer Breakdown — click a finding to see details</div>
+                    <div class="layers-grid">
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Clone / Access</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Dependencies</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-warn"></span><span class="layer-name">Vulnerabilities</span><span class="layer-score warn">1H</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">SAST</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Secret Detection</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">IaC Scanning</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-skip"></span><span class="layer-name">Container Scan</span><span class="layer-score">—</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">License Check</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-warn"></span><span class="layer-name">NVD Enrichment</span><span class="layer-score warn">3M</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">SBOM Export</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Fix Suggestions</span><span class="layer-score good">✓</span></div>
+                      <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Scoring</span><span class="layer-score good">87</span></div>
+                    </div>
+                    <div style="background:var(--green-bg);border:1px solid var(--green-border);padding:10px 12px;margin-top:12px;">
+                      <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:4px;">What score 87 means</div>
+                      <div style="font-size:10px;color:var(--green);line-height:1.6;">Strong security posture. 1 high-severity dependency vulnerability is the primary risk. Fix it and you'll hit 93+. No secrets exposed, no critical SAST issues.</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;">Findings — click to expand</div>
+                    <div class="mini-finding" onclick="toggleFinding(this)">
+                      <span class="mf-dot mfd-h"></span>
+                      <div class="mf-body">
+                        <div class="mf-title">cryptography 41.0.3 — HIGH severity CVE</div>
+                        <div class="mf-meta"><span>requirements.txt</span><span>·</span><span>CVSS 7.5</span></div>
+                        <div class="mf-impact">⚠ Risk: An attacker can decrypt TLS traffic intercepted on your network. This affects all API calls your service makes.</div>
+                        <div class="mf-fix">✓ Fix: <strong>pip install cryptography==41.0.7</strong> — patched version available now.</div>
+                      </div>
+                    </div>
+                    <div class="mini-finding" onclick="toggleFinding(this)">
+                      <span class="mf-dot mfd-m"></span>
+                      <div class="mf-body">
+                        <div class="mf-title">certifi 2023.5.7 — MEDIUM severity</div>
+                        <div class="mf-meta"><span>requirements.txt</span><span>·</span><span>CVSS 5.4</span></div>
+                        <div class="mf-impact">⚠ Risk: Outdated CA bundle may trust revoked certificates, enabling man-in-the-middle attacks on HTTPS calls.</div>
+                        <div class="mf-fix">✓ Fix: <strong>pip install certifi --upgrade</strong></div>
+                      </div>
+                    </div>
+                    <div class="mini-finding" onclick="toggleFinding(this)">
+                      <span class="mf-dot mfd-m"></span>
+                      <div class="mf-body">
+                        <div class="mf-title">Missing rate limit on /api/scans POST</div>
+                        <div class="mf-meta"><span>app/api/scans.py:79</span><span>·</span><span>SAST</span></div>
+                        <div class="mf-impact">⚠ Risk: Unauthenticated callers can flood your scan queue, causing service degradation for paying customers.</div>
+                        <div class="mf-fix">✓ Fix: Add <strong>@limiter.limit("10/minute")</strong> decorator or use slowapi middleware.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW 2 -->
+            <div class="scan-row" id="sr2">
+              <div class="scan-row-head" onclick="toggleRow('sr2')">
+                <div class="repo-cell"><span class="repo-name">contractguard</span><span class="repo-branch">branch: main</span></div>
+                <span class="score-pill sp-m">61</span>
+                <span class="status-tag st-ok">Complete</span>
+                <div class="fc-row"><span class="fc fc-c">1C</span><span class="fc fc-h">4H</span><span class="fc fc-m">8M</span><span class="fc fc-l">12L</span></div>
+                <span class="ts">6h ago</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="scan-detail">
+                <div style="background:var(--red-bg);border:1px solid var(--red-border);padding:12px 14px;margin-bottom:14px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px;">⚠ Score 61 — Needs Immediate Attention</div>
+                  <div style="font-size:10px;color:var(--red);line-height:1.6;">1 critical finding means a known, exploitable vulnerability is actively present. This repo should not be in production until the critical is resolved. Fixing the critical + top 4 highs would push this to 84+.</div>
+                </div>
+                <div class="layers-grid">
+                  <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Clone / Access</span><span class="layer-score good">✓</span></div>
+                  <div class="layer-item"><span class="layer-icon li-fail"></span><span class="layer-name">Dependencies</span><span class="layer-score bad">1C 4H</span></div>
+                  <div class="layer-item"><span class="layer-icon li-fail"></span><span class="layer-name">SAST</span><span class="layer-score bad">3H</span></div>
+                  <div class="layer-item"><span class="layer-icon li-warn"></span><span class="layer-name">Secret Detection</span><span class="layer-score warn">1H</span></div>
+                  <div class="layer-item"><span class="layer-icon li-warn"></span><span class="layer-name">NVD Enrichment</span><span class="layer-score warn">8M</span></div>
+                  <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">License Check</span><span class="layer-score good">✓</span></div>
+                  <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">SBOM Export</span><span class="layer-score good">✓</span></div>
+                  <div class="layer-item"><span class="layer-icon li-pass"></span><span class="layer-name">Scoring</span><span class="layer-score bad">61</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW 3 -->
+            <div class="scan-row" id="sr3">
+              <div class="scan-row-head" onclick="toggleRow('sr3')">
+                <div class="repo-cell"><span class="repo-name">facebook/react</span><span class="repo-branch">branch: main</span></div>
+                <span class="score-pill sp-h">94</span>
+                <span class="status-tag st-ok">Complete</span>
+                <div class="fc-row"><span class="fc fc-c">0C</span><span class="fc fc-h">0H</span><span class="fc fc-m">2M</span><span class="fc fc-l">5L</span></div>
+                <span class="ts">1d ago</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="scan-detail">
+                <div style="background:var(--green-bg);border:1px solid var(--green-border);padding:12px 14px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:4px;">Score 94 — Excellent</div>
+                  <div style="font-size:10px;color:var(--green);line-height:1.6;">No criticals, no highs. 2 medium-severity dependency notices (informational). This is what a well-maintained production codebase looks like. Use as a benchmark for your own repos.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- QUICK EXPLAINER -->
+          <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);padding:16px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;">Understanding Your Score</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-border);">
+                <div style="font-size:20px;font-weight:800;color:var(--green);margin-bottom:4px;">80–100</div>
+                <div style="font-size:9px;font-weight:700;color:var(--green);margin-bottom:4px;">HEALTHY</div>
+                <div style="font-size:9px;color:var(--green);line-height:1.5;">Production-ready. Minor issues only. Safe to deploy and ship to customers.</div>
+              </div>
+              <div style="padding:10px;background:var(--amber-bg);border:1px solid var(--amber-border);">
+                <div style="font-size:20px;font-weight:800;color:var(--amber);margin-bottom:4px;">50–79</div>
+                <div style="font-size:9px;font-weight:700;color:var(--amber);margin-bottom:4px;">CAUTION</div>
+                <div style="font-size:9px;color:var(--amber);line-height:1.5;">Addressable issues present. High findings should be fixed before next release.</div>
+              </div>
+              <div style="padding:10px;background:var(--red-bg);border:1px solid var(--red-border);">
+                <div style="font-size:20px;font-weight:800;color:var(--red);margin-bottom:4px;">0–49</div>
+                <div style="font-size:9px;font-weight:700;color:var(--red);margin-bottom:4px;">CRITICAL RISK</div>
+                <div style="font-size:9px;color:var(--red);line-height:1.5;">Active vulnerabilities. Do not ship until score is above 70.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+          <!-- SCORE GAUGE -->
+          <div>
+            <div class="sh">Overall Security Posture</div>
+            <div class="gauge-panel">
+              <div class="gauge-wrap">
+                <svg class="gauge-svg" viewBox="0 0 160 90">
+                  <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#E5E3DF" stroke-width="10" stroke-linecap="round"/>
+                  <path id="gaugeFill" d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#166534" stroke-width="10" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                </svg>
+                <div class="gauge-val sv-g" id="gaugeNum">–</div>
+              </div>
+              <div class="gauge-label">Avg across 7 repos</div>
+              <div style="display:flex;justify-content:center;gap:12px;margin-top:10px;font-size:9px;color:var(--faint);">
+                <span>0 — Critical</span><span>·</span><span>50 — Caution</span><span>·</span><span>80 — Healthy</span>
+              </div>
+              <div class="score-meaning">
+                <div class="sm-head">What 73 means for you</div>
+                <p>Your codebase is in the caution zone. The 3 open criticals are pulling your score down significantly. Resolve them and your average jumps to ~84 — into the healthy range.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- PLAN -->
+          <div>
+            <div class="sh">Your Subscription</div>
+            <div class="plan-card">
+              <div class="pc-head">
+                <div>
+                  <div class="pc-name">Pro Plan</div>
+                  <div class="pc-tier">$19/month · billed monthly</div>
+                </div>
+                <div class="pc-badge">Active</div>
+              </div>
+              <div class="pc-renews">Renews <span>May 9, 2026</span></div>
+              <div class="usage-row">
+                <div class="usage-top"><span>Scans used</span><span>14 / 50</span></div>
+                <div class="usage-track"><div class="usage-fill uf-red" id="uf1" style="width:0%"></div></div>
+              </div>
+              <div class="usage-row">
+                <div class="usage-top"><span>Private repos</span><span>3 / 10</span></div>
+                <div class="usage-track"><div class="usage-fill uf-amber" id="uf2" style="width:0%"></div></div>
+              </div>
+              <div class="pc-includes">
+                <div class="inc">✓ 12-layer scan pipeline</div>
+                <div class="inc">✓ SBOM export (SPDX + CycloneDX)</div>
+                <div class="inc">✓ CVSS enrichment via NVD</div>
+                <div class="inc">✓ Fix suggestions per finding</div>
+                <div class="no-inc">CI/CD webhook integration</div>
+                <div class="no-inc">SAML SSO / team seats</div>
+                <div class="no-inc">SLA + priority support</div>
+              </div>
+              <div class="pc-actions">
+                <button class="pc-btn up" onclick="toast('Opening upgrade flow — Enterprise at $49/mo')">Upgrade →</button>
+                <button class="pc-btn" onclick="toast('Opening billing portal…')">Billing</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCORE TREND -->
+          <div>
+            <div class="sh">Score Trend (30 days)</div>
+            <div class="trend-panel">
+              <div class="trend-head">
+                <div>
+                  <span class="trend-score sv-g">73</span>
+                  <span style="font-size:10px;color:var(--faint);margin-left:6px;">current avg</span>
+                </div>
+                <span class="trend-change">+8 pts ↑</span>
+              </div>
+              <div class="sparkline" id="sparkline"></div>
+              <div class="spark-labels"><span>Mar 10</span><span>Mar 24</span><span>Apr 9</span></div>
+              <div style="font-size:9px;color:var(--faint);margin-top:10px;line-height:1.6;">Each bar = 1 scan batch. Hover for score. Trend is upward — fixing dependencies is working.</div>
+            </div>
+          </div>
+
+          <!-- ACTIVITY -->
+          <div>
+            <div class="sh">Recent Activity</div>
+            <div class="activity-panel">
+              <div class="activity-item">
+                <div class="act-icon ai-scan">🔍</div>
+                <div class="act-body">
+                  <div class="act-text"><strong>zaphscore-engine</strong> scanned — score 87</div>
+                  <div class="act-ts">2h ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="act-icon ai-alert">🚨</div>
+                <div class="act-body">
+                  <div class="act-text">New <strong>critical finding</strong> in contractguard — XZ supply chain CVE</div>
+                  <div class="act-ts">6h ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="act-icon ai-fix">✅</div>
+                <div class="act-body">
+                  <div class="act-text"><strong>2 highs resolved</strong> in zaphscore-engine since last scan</div>
+                  <div class="act-ts">1d ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="act-icon ai-scan">🔍</div>
+                <div class="act-body">
+                  <div class="act-text"><strong>facebook/react</strong> scanned — score 94</div>
+                  <div class="act-ts">1d ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── API TAB ── -->
+    <div id="tab-api" class="tab-panel">
+      <div style="max-width:720px;">
+        <div style="margin-bottom:24px;">
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px;">API Access</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.7;">Use the ZaphScore API to trigger scans programmatically from your CI/CD pipeline, fetch results, or build your own dashboards. Pro plan includes 100 requests/minute. All responses are JSON.</div>
+        </div>
+        <div class="sh">Your API Key</div>
+        <div class="api-panel" style="margin-bottom:16px;">
+          <div class="api-explain">Your API key authenticates every request. Treat it like a password — never commit it to git. Rotate it anytime from this panel.</div>
+          <div class="api-key-row">
+            <div class="api-key-val" id="apiKeyVal">zse_pro_••••••••••••••••••••••••••</div>
+            <button class="api-copy-btn" id="apiToggleBtn" onclick="toggleApiKey()">Reveal</button>
+            <button class="api-copy-btn" onclick="copyApiKey()">Copy</button>
+          </div>
+          <div class="api-stat-row">
+            <div class="api-stat"><div class="asv">100</div><div class="asl">Req/min limit</div></div>
+            <div class="api-stat"><div class="asv sv-g">847</div><div class="asl">Calls this month</div></div>
+            <div class="api-stat"><div class="asv">99.9%</div><div class="asl">Uptime (30d)</div></div>
+          </div>
+        </div>
+
+        <div class="sh">Quick Start</div>
+        <div style="background:var(--dark);border:1px solid #252320;padding:20px;font-size:11px;line-height:2;color:#9B9890;margin-bottom:16px;">
+          <div style="color:#4A4845;font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;">Submit a scan</div>
+          <div><span style="color:#C41C1C;">POST</span> <span style="color:#F8F7F4;">https://zaphscore.zaphenath.app/api/scans</span></div>
+          <div style="color:#4A4845;">Authorization: Bearer <span style="color:#6B6860;">zse_pro_your_key_here</span></div>
+          <div style="color:#4A4845;">Content-Type: <span style="color:#6B6860;">application/json</span></div>
+          <br>
+          <div style="color:#4A4845;">Body: <span style="color:#F8F7F4;">{"repo_url": "https://github.com/owner/repo", "branch": "main"}</span></div>
+          <br>
+          <div style="color:#4A4845;">Response: <span style="color:#16A34A;">{"scan_id": "uuid", "status": "queued", "stream_url": "/api/scans/uuid/stream"}</span></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);">Full API reference at <a href="#" style="color:var(--red);text-decoration:none;">zaphscore.zaphenath.app/docs</a> — includes SSE streaming, pagination, and finding schema.</div>
+      </div>
+    </div>
+
+    <!-- ── SCANS TAB ── -->
+    <div id="tab-scans" class="tab-panel">
+      <div style="font-size:18px;font-weight:700;margin-bottom:20px;">All Scans</div>
+      <div style="background:var(--surface);border:1px solid var(--border);padding:20px;text-align:center;color:var(--faint);font-size:11px;">
+        Full scan history with filters, export, and re-scan controls.<br>
+        <span style="font-size:10px;color:var(--faint);margin-top:4px;display:block;">(Switch to Overview to see recent scans with expandable details)</span>
+      </div>
+    </div>
+
+    <!-- ── FINDINGS TAB ── -->
+    <div id="tab-findings" class="tab-panel">
+      <div style="font-size:18px;font-weight:700;margin-bottom:20px;">All Open Findings</div>
+      <div style="background:var(--surface);border:1px solid var(--border);padding:20px;text-align:center;color:var(--faint);font-size:11px;">
+        Aggregated findings across all repos, filterable by severity, type, and repo.<br>
+        <span style="font-size:10px;color:var(--faint);margin-top:4px;display:block;">(Expand any scan row on Overview to explore findings)</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── MATRIX ANIMATION ON LOAD ──────────────────────────
+(function initLoginAnimations() {
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*!?><{}[]';
+  const letters = document.querySelectorAll('.schar');
+
+  function scrambleLetter(el, finalChar, delay) {
+    let iterations = 0;
+    const maxIter = 10;
+    el.classList.add('scrambling');
+    const iv = setInterval(() => {
+      el.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+      iterations++;
+      if (iterations >= maxIter) {
+        clearInterval(iv);
+        el.textContent = finalChar;
+        el.classList.remove('scrambling');
+        el.classList.add('settling');
+        setTimeout(() => el.classList.remove('settling'), 300);
+      }
+    }, 50);
+  }
+
+  // Stagger each letter of "Score"
+  letters.forEach((el, i) => {
+    setTimeout(() => scrambleLetter(el, el.dataset.final, 0), 300 + i * 120);
+  });
+
+  // Loop — re-scramble every 4s
+  setInterval(() => {
+    letters.forEach((el, i) => {
+      setTimeout(() => scrambleLetter(el, el.dataset.final, 0), i * 100);
+    });
+  }, 4000);
+
+  // Fade in tagline
+  setTimeout(() => {
+    const t = document.getElementById('tagline12');
+    if (t) { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; }
+  }, 50);
+
+  // Fade in security badges
+  setTimeout(() => {
+    const b = document.getElementById('secBadges');
+    if (b) { b.style.opacity = '1'; b.style.transform = 'translateY(0)'; }
+  }, 50);
+
+  // Layer ticker — scrolls through all 12 scan layers
+  const layers = [
+    'Clone & Access','Dependency Resolution','Vulnerability Scan',
+    'SAST Analysis','Secret Detection','IaC Scanning',
+    'Container Scan','License Check','NVD Enrichment',
+    'SBOM Export','Fix Suggestions','Scoring'
+  ];
+  let layerIdx = 0;
+  const ticker = document.getElementById('layerTicker');
+  if (ticker) {
+    ticker.textContent = layers[0];
+    setInterval(() => {
+      layerIdx = (layerIdx + 1) % layers.length;
+      ticker.style.transform = 'translateY(-100%)';
+      ticker.style.opacity = '0';
+      setTimeout(() => {
+        ticker.textContent = layers[layerIdx];
+        ticker.style.transition = 'none';
+        ticker.style.transform = 'translateY(100%)';
+        ticker.style.opacity = '0';
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            ticker.style.transition = 'transform .4s ease, opacity .4s ease';
+            ticker.style.transform = 'translateY(0)';
+            ticker.style.opacity = '1';
+          });
+        });
+      }, 400);
+    }, 1800);
+  }
+})();
+
+// Screen switcher
+function show(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.dev-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (id === 'dashboard') initDashboard();
+}
+
+// Tab switcher
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// Login steps
+function goStep2() {
+  const email = document.getElementById('emailInput').value || 'mario@zaphenath.com';
+  document.getElementById('emailDisplay').textContent = email;
+  document.getElementById('ls1').classList.remove('active');
+  document.getElementById('ls2').classList.add('active');
+  document.getElementById('sd1').style.background = '#166534';
+  document.getElementById('sd1').textContent = '✓';
+  document.getElementById('sd2').style.background = 'var(--red)';
+  document.getElementById('sd2').style.color = 'white';
+  document.getElementById('step-label').textContent = 'Step 2 of 2 — Password';
+}
+function goStep1() {
+  document.getElementById('ls2').classList.remove('active');
+  document.getElementById('ls1').classList.add('active');
+  document.getElementById('sd1').style.background = 'var(--red)';
+  document.getElementById('sd1').style.color = 'white';
+  document.getElementById('sd1').textContent = '1';
+  document.getElementById('sd2').style.background = '#252320';
+  document.getElementById('sd2').style.color = '#3A3835';
+  document.getElementById('step-label').textContent = 'Step 1 of 2 — Email';
+}
+function loginLoading() {
+  const btn = document.getElementById('signInBtn') || document.querySelector('.login-btn');
+  btn.classList.add('loading');
+  btn.textContent = 'Signing in…';
+  setTimeout(() => {
+    document.getElementById('sd2').style.background = '#166534';
+    document.getElementById('sd2').textContent = '✓';
+    document.getElementById('sd3').style.background = '#166534';
+    document.getElementById('sd3').style.color = 'white';
+    document.getElementById('step-label').textContent = 'Authenticated ✓';
+    setTimeout(() => show('dashboard', document.querySelectorAll('.dev-btn')[1]), 400);
+  }, 1200);
+}
+
+// Expand/collapse scan rows
+function toggleRow(id) {
+  const row = document.getElementById(id);
+  row.classList.toggle('expanded');
+}
+
+// Expand/collapse findings
+function toggleFinding(el) {
+  el.classList.toggle('open');
+}
+
+// Dashboard init — animations
+let dashInit = false;
+function initDashboard() {
+  if (dashInit) return;
+  dashInit = true;
+
+  // Animate stat counters
+  animCount('c1', 0, 14, 600);
+  animCount('c2', 0, 73, 800);
+  animCount('c3', 0, 3, 400);
+  animCount('c4', 0, 7, 500);
+
+  // Animate gauge
+  setTimeout(() => {
+    const fill = document.getElementById('gaugeFill');
+    const numEl = document.getElementById('gaugeNum');
+    const target = 73;
+    const total = 188.5; // half circumference
+    const offset = total - (target / 100) * total;
+    fill.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)';
+    fill.style.strokeDashoffset = offset;
+    animCount('gaugeNum', 0, target, 1400);
+  }, 200);
+
+  // Animate usage bars
+  setTimeout(() => {
+    document.getElementById('uf1').style.width = '28%';
+    document.getElementById('uf2').style.width = '30%';
+  }, 300);
+
+  // Build sparkline
+  const scores = [52, 55, 58, 56, 61, 60, 63, 65, 67, 70, 69, 73];
+  const min = Math.min(...scores), max = Math.max(...scores);
+  const sl = document.getElementById('sparkline');
+  sl.innerHTML = '';
+  scores.forEach((s, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'spark-bar' + (i === scores.length - 1 ? ' latest' : '');
+    const pct = ((s - min) / (max - min)) * 100;
+    bar.style.height = '8px';
+    bar.innerHTML = `<div class="tip">Score: ${s}</div>`;
+    sl.appendChild(bar);
+    setTimeout(() => {
+      bar.style.transition = 'height .6s cubic-bezier(.4,0,.2,1)';
+      bar.style.height = Math.max(pct, 8) + '%';
+    }, 100 + i * 60);
+  });
+}
+
+// Animated counter
+function animCount(id, from, to, duration) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * ease);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Toast
+function toast(msg) {
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// API key
+let apiVisible = false;
+const REAL_KEY = 'zse_pro_k8x2mNpQ7rLtWvYd3hB9sEcJf';
+function toggleApiKey() {
+  const el = document.getElementById('apiKeyVal');
+  const btn = document.getElementById('apiToggleBtn');
+  apiVisible = !apiVisible;
+  el.textContent = apiVisible ? REAL_KEY : 'zse_pro_••••••••••••••••••••••••••';
+  btn.textContent = apiVisible ? 'Hide' : 'Reveal';
+}
+function copyApiKey() {
+  toast('API key copied to clipboard');
+}
+</script>
+</body>
+</html>
