@@ -187,6 +187,12 @@ except Exception as e:
     logger.error("Failed to load user router: %s", e)
 
 try:
+    from app.api.reports import router as reports_router  # D-043: PDF export
+    app.include_router(reports_router)
+except Exception as e:
+    logger.error("Failed to load reports router: %s", e)
+
+try:
     from app.api.webhook import router as webhook_router
     app.include_router(webhook_router)
     logger.info("Stripe webhook router loaded")

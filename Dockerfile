@@ -54,7 +54,12 @@ COPY . .
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # ---- Runtime ----------------------------------------------------------------
-# NO Docker HEALTHCHECK — Railway uses its own via railway.toml
+# D-031: HEALTHCHECK — allows container orchestrators (Docker, Railway, k8s)
+# to detect unhealthy state and restart the container automatically.
+# /ping returns {"ok": true} within 1s even with DB down (crash-proof endpoint).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/ping || exit 1
+
 # NO hardcoded EXPOSE — Railway sets $PORT dynamically
 
 CMD ["bash", "start.sh"]
