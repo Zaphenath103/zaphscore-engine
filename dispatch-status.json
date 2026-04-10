@@ -515,8 +515,8 @@
       "tier": "P0",
       "title": "Secret Injection \u00e2\u20ac\u201d Move PAT Out of Prompt",
       "agent": "boris",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T07:20:07Z",
       "file": ".github/workflows/",
       "note": "GitHub PAT currently stored in plain text in scheduled task prompts. Move to GitHub Actions secret ZAPHLABS_PAT. All 4 war room agents must read from $ZAPHLABS_PAT env var injected at runtime, never hardcoded in prompt files."
     },
@@ -525,8 +525,8 @@
       "tier": "P1",
       "title": "GitHub Webhook \u00e2\u2020\u2019 Agent Trigger on Push",
       "agent": "dario",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T07:20:07Z",
       "file": ".github/workflows/agent-trigger.yml",
       "note": "Create GitHub Actions workflow: on push to main \u00e2\u2020\u2019 trigger the appropriate war room agent via claude.ai RemoteTrigger API or webhook. Every PR/push wakes the relevant agent automatically. No manual Run Now clicks ever again."
     },

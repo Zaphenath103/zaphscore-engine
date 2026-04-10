@@ -1,0 +1,50 @@
+name: ZaphLabs Agent Trigger on Push
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dispatch-status.json'
+      - 'zaphnews-dispatch.json'
+      - 'advisory-dispatch.json'
+
+jobs:
+  check-and-trigger:
+    name: Check for new pending items
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Count pending items
+        id: count
+        run: |
+          PENDING=$(python3 -c "
+          import json
+          data = json.load(open('dispatch-status.json'))
+          pending = [i for i in data['items'] if i.get('status') == 'pending']
+          print(len(pending))
+          ")
+          echo "pending=$PENDING" >> $GITHUB_OUTPUT
+          echo "Pending items: $PENDING"
+
+      - name: Trigger war room if items pending
+        if: steps.count.outputs.pending != '0'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ZAPHLABS_PAT }}
+          script: |
+            const pending = ${{ steps.count.outputs.pending }};
+            console.log(`Triggering war runner — ${pending} items pending`);
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'secret-runner.yml',
+              ref: 'main',
+              inputs: { war_room: 'war1' }
+            });
+            console.log('War room triggered successfully');
+
+      - name: Skip if nothing pending
+        if: steps.count.outputs.pending == '0'
+        run: echo "All items done — no agent trigger needed"
