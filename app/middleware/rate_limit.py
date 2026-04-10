@@ -54,6 +54,12 @@ def _parse_limit(spec: str) -> tuple[int, int]:
 _FREE_LIMIT, _FREE_WINDOW = _parse_limit(os.environ.get("RATE_LIMIT_FREE", "10/hour"))
 _PRO_LIMIT, _PRO_WINDOW   = _parse_limit(os.environ.get("RATE_LIMIT_PRO", "100/hour"))
 
+# D-061: Per-user daily limits (separate from global IP rate limits)
+# free = 3 scans/day, pro = 100 scans/day, enterprise = unlimited
+_USER_FREE_LIMIT, _USER_FREE_WINDOW   = _parse_limit(os.environ.get("USER_RATE_FREE", "3/day"))
+_USER_PRO_LIMIT, _USER_PRO_WINDOW     = _parse_limit(os.environ.get("USER_RATE_PRO", "100/day"))
+_USER_ENT_LIMIT, _USER_ENT_WINDOW     = _parse_limit(os.environ.get("USER_RATE_ENT", "10000/day"))
+
 
 # ---------------------------------------------------------------------------
 # In-memory store (fallback)
@@ -134,97 +140,92 @@ async def _redis_check(key: str, limit: int, window_secs: int) -> Optional[tuple
 # Middleware
 # ---------------------------------------------------------------------------
 
-def _resolve_client_ip(request: Request) -> str:
-    """D-072: Resolve client IP using the rightmost (proxy-appended) hop.
 
-    Rightmost = added by our infrastructure (Railway/Vercel), not spoofable by clients.
-    Falls back to direct TCP address if no proxy headers present.
-    """
-    x_forwarded_for = request.headers.get("X-Forwarded-For", "").strip()
-    x_real_ip = request.headers.get("X-Real-IP", "").strip()
-    direct_ip = request.client.host if request.client else "unknown"
+def _extract_user_tier(token: str) -> tuple[str, str]:
+    """D-061: Decode JWT to extract user_id and tier (plan).
 
-    if x_forwarded_for:
-        hops = [h.strip() for h in x_forwarded_for.split(",") if h.strip()]
-        return hops[-1] if hops else direct_ip
-    if x_real_ip:
-        return x_real_ip
-    return direct_ip
-
-
-def _decode_jwt_claims(token: str) -> dict:
-    """Decode JWT payload without full verification (rate limit context only).
-
-    We do a best-effort decode here — we're only reading the 'plan' claim
-    to determine tier. Full verification happens in the auth dependency.
-    Returns empty dict if decode fails.
+    Returns (user_id, tier) where tier is 'free' | 'pro' | 'enterprise'.
+    Falls back to ('ip_fallback', 'free') on any error.
     """
     try:
-        import base64 as _b64, json as _json
+        import base64, json, time
         parts = token.split(".")
         if len(parts) != 3:
-            return {}
+            return ("unknown", "free")
+        # Decode payload (no signature verification needed � rate limiting only)
         padded = parts[1] + "=" * (-len(parts[1]) % 4)
-        return _json.loads(_b64.urlsafe_b64decode(padded))
+        payload = json.loads(base64.urlsafe_b64decode(padded))
+
+        # Check expiry
+        if payload.get("exp", 0) < time.time():
+            return ("expired", "free")
+
+        user_id = payload.get("sub", "unknown")
+        # Plan can be in app_metadata.plan or user_metadata.plan or top-level
+        app_meta = payload.get("app_metadata", {}) or {}
+        user_meta = payload.get("user_metadata", {}) or {}
+        tier = (
+            app_meta.get("plan")
+            or user_meta.get("plan")
+            or payload.get("plan")
+            or "free"
+        ).lower()
+
+        # Normalize enterprise variants
+        if tier in ("enterprise", "ent", "team"):
+            tier = "enterprise"
+        elif tier in ("pro", "professional", "paid"):
+            tier = "pro"
+        else:
+            tier = "free"
+
+        return (user_id, tier)
     except Exception:
-        return {}
-
-
-# D-061: Per-user daily limits by plan tier
-# Free users: 3 scans/day (encourages upgrade)
-# Pro users: 100 scans/day (generous for power users)
-# Enterprise users: effectively unlimited (10 000/day)
-_TIER_LIMITS: dict[str, tuple[int, int]] = {
-    "enterprise": (10_000, 86_400),
-    "pro": (100, 86_400),
-    "free": (3, 86_400),
-}
+        return ("unknown", "free")
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Sliding window rate limiter applied to scan-creation endpoints.
-
-    D-061: Per-user tier limits (free=3/day, pro=100/day, enterprise=unlimited).
-    D-072: Hardened IP resolution using rightmost X-Forwarded-For hop.
-    """
+    """Sliding window rate limiter applied to scan-creation endpoints."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Only rate-limit POST to scan endpoints
         if request.method != "POST" or request.url.path not in _RATE_LIMITED_PATHS:
             return await call_next(request)
 
-        # --- D-061: Determine rate limit tier from JWT claims ---
+        # D-061: Per-user rate limiting based on JWT tier claims
         auth = request.headers.get("Authorization", "")
-        user_id: Optional[str] = None
-        tier_name = "free"
+        client_ip = (
+            request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            or request.headers.get("X-Real-IP", "")
+            or (request.client.host if request.client else "unknown")
+        )
 
         if auth and auth.startswith("Bearer "):
             token = auth[len("Bearer "):].strip()
-            claims = _decode_jwt_claims(token)
-            user_id = claims.get("sub") or claims.get("user_id")
-            # Read plan from JWT app_metadata (Supabase convention)
-            app_meta = claims.get("app_metadata", {}) or {}
-            user_meta = claims.get("user_metadata", {}) or {}
-            plan = (
-                app_meta.get("plan")
-                or user_meta.get("plan")
-                or claims.get("plan")
-                or "free"
-            )
-            tier_name = plan if plan in _TIER_LIMITS else "free"
+            user_id, tier = _extract_user_tier(token)
 
-        limit, window = _TIER_LIMITS.get(tier_name, _TIER_LIMITS["free"])
+            # Enterprise: unlimited (skip rate limit entirely)
+            if tier == "enterprise":
+                response = await call_next(request)
+                response.headers["X-RateLimit-Tier"] = "enterprise"
+                response.headers["X-RateLimit-Remaining"] = "unlimited"
+                return response
 
-        # --- Build rate limit key (per-user when authenticated, per-IP otherwise) ---
-        client_ip = _resolve_client_ip(request)
-        if user_id:
-            # Per-user key: user ID + daily window — avoids IP rotation bypasses
+            # Pro: 100/day per user
+            if tier == "pro":
+                limit, window = _USER_PRO_LIMIT, _USER_PRO_WINDOW
+            else:
+                # Free authenticated: 3/day per user
+                limit, window = _USER_FREE_LIMIT, _USER_FREE_WINDOW
+
             key = f"rl:user:{user_id}:{window}"
         else:
-            # Anonymous: IP-based
-            key = f"rl:ip:{client_ip}:{window}"
+            # Unauthenticated: IP-based global limit (10/hr)
+            tier = "free"
+            limit, window = _FREE_LIMIT, _FREE_WINDOW
+            key = f"rl:{client_ip}:{window}"
 
-        # --- Check rate limit (Redis preferred, in-memory fallback) ---
+        # Check rate limit (Redis preferred, in-memory fallback)
         result = await _redis_check(key, limit, window)
         if result is None:
             allowed, remaining = _in_memory_check(key, limit, window)
@@ -232,29 +233,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             allowed, remaining = result
 
         if not allowed:
-            logger.warning(
-                "Rate limit exceeded: ip=%s user_id=%s tier=%s limit=%d/%ds",
-                client_ip, user_id or "anon", tier_name, limit, window,
-            )
+            logger.warning("Rate limit exceeded: ip=%s tier=%s limit=%d/%ds", client_ip, tier, limit, window)
             upgrade_msg = (
-                " Upgrade to Pro for 100 scans/day at zaphscore.zaphenath.app."
-                if tier_name == "free" else ""
+                "Upgrade to Pro for 100 scans/day: https://zaphscore.zaphenath.app/pricing"
+                if tier == "free" else
+                "Contact us for Enterprise: https://zaphscore.zaphenath.app/pricing"
             )
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": f"Rate limit exceeded.{upgrade_msg}",
+                    "detail": "Rate limit exceeded",
                     "limit": limit,
                     "window_seconds": window,
-                    "tier": tier_name,
+                    "tier": tier,
                     "retry_after": window,
+                    "upgrade": upgrade_msg,
                 },
                 headers={
                     "Retry-After": str(window),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Window": str(window),
-                    "X-RateLimit-Tier": tier_name,
                 },
             )
 
@@ -262,5 +261,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Limit"] = str(limit)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["X-RateLimit-Window"] = str(window)
-        response.headers["X-RateLimit-Tier"] = tier_name
         return response
