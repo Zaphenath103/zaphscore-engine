@@ -1,5 +1,5 @@
 """
-Zaphenath Security Engine (ZSE) — FastAPI entry point.
+Zaphenath Security Engine (ZSE) â€” FastAPI entry point.
 
 Run with:
     uvicorn app.main:app --reload
@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger("zse")
 
 # ---------------------------------------------------------------------------
-# Global state — set during lifespan, read by endpoints
+# Global state â€” set during lifespan, read by endpoints
 # ---------------------------------------------------------------------------
 _db_backend: str = "none"
 _db_ok: bool = False
@@ -37,12 +37,12 @@ _worker_ok: bool = False
 
 
 # ---------------------------------------------------------------------------
-# Lifespan — startup / shutdown (CRASH-PROOF)
+# Lifespan â€” startup / shutdown (CRASH-PROOF)
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup/shutdown. NEVER crashes — app must always start for healthcheck."""
+    """Startup/shutdown. NEVER crashes â€” app must always start for healthcheck."""
     global _db_backend, _db_ok, _worker_ok
 
     logger.info("ZSE starting up... PORT=%s", os.environ.get("PORT", "not set"))
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Sentry init failed (non-fatal): %s", e)
 
-    # D-033: Validate required env vars — log warnings, fail-fast in production
+    # D-033: Validate required env vars â€” log warnings, fail-fast in production
     try:
         from app.config import validate_required_env_vars
         is_prod = os.environ.get("VERCEL") or os.environ.get("RAILWAY_ENVIRONMENT")
@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI):
             _db_ok = True
             logger.info("PostgreSQL connected")
         except Exception as e:
-            logger.warning("PostgreSQL failed: %s — trying SQLite", e)
+            logger.warning("PostgreSQL failed: %s â€” trying SQLite", e)
 
     if not _db_ok:
         try:
@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
                     setattr(db_module, attr, getattr(db, attr))
             logger.info("SQLite connected")
         except Exception as e:
-            logger.error("SQLite also failed: %s — running without database", e)
+            logger.error("SQLite also failed: %s â€” running without database", e)
             _db_backend = "none"
 
     # --- Worker (best-effort, non-fatal) ---
@@ -115,7 +115,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error("Worker failed to start: %s", e)
 
-    logger.info("ZSE ready — db=%s worker=%s", _db_backend, _worker_ok)
+    logger.info("ZSE ready â€” db=%s worker=%s", _db_backend, _worker_ok)
 
     yield  # ---- app is running ----
 
@@ -145,14 +145,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# D-004: CORS — never send credentials=True with wildcard origin.
+# D-004: CORS â€” never send credentials=True with wildcard origin.
 # Per CORS spec: allow_credentials=True with allow_origins=["*"] is rejected by browsers
 # AND enables CSRF from any domain. Credentials only flow to explicit origins.
 _cors_origins = (
     ["*"] if settings.CORS_ORIGINS == "*"
     else [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 )
-_cors_credentials = _cors_origins != ["*"]  # False when wildcard — safe default
+_cors_credentials = _cors_origins != ["*"]  # False when wildcard â€” safe default
 
 app.add_middleware(
     CORSMiddleware,
@@ -162,7 +162,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
-# D-014: Security headers — X-Content-Type-Options, X-Frame-Options, CSP, etc.
+# D-014: Security headers â€” X-Content-Type-Options, X-Frame-Options, CSP, etc.
 try:
     from app.middleware.security_headers import SecurityHeadersMiddleware
     app.add_middleware(SecurityHeadersMiddleware)
@@ -170,7 +170,7 @@ try:
 except Exception as e:
     logger.error("Security headers middleware failed to load: %s", e)
 
-# D-005: Rate limiting middleware — protects scan endpoints from DoS
+# D-005: Rate limiting middleware â€” protects scan endpoints from DoS
 try:
     from app.middleware.rate_limit import RateLimitMiddleware
     app.add_middleware(RateLimitMiddleware)
@@ -178,7 +178,7 @@ try:
 except Exception as e:
     logger.error("Rate limiting middleware failed to load: %s", e)
 
-# Mount routers — wrapped so a broken router never kills startup
+# Mount routers â€” wrapped so a broken router never kills startup
 try:
     from app.api.scans import router as scans_router, admin_router as scans_admin_router
     app.include_router(scans_router)
@@ -213,6 +213,12 @@ except Exception as e:
 try:
     from app.api.webhook import router as webhook_router
     app.include_router(webhook_router)
+
+    try:
+        from app.api.newsletter import router as newsletter_router  # ZN-004: ZaphNews newsletter subscribe
+        app.include_router(newsletter_router)
+    except Exception as _e:
+        logger.warning("Newsletter router not loaded: %s", _e)
     logger.info("Stripe webhook router loaded")
 except Exception as e:
     logger.error("Failed to load webhook router: %s", e)
@@ -236,7 +242,7 @@ async def not_found_handler(request: Request, exc):
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
-    """Serve robots.txt — prevent API crawling."""
+    """Serve robots.txt â€” prevent API crawling."""
     return (
         "User-agent: *\n"
         "Allow: /\n"
@@ -252,13 +258,13 @@ async def robots_txt():
 
 @app.get("/ping")
 async def ping():
-    """Instant liveness probe — Railway healthcheck. Always returns 200."""
+    """Instant liveness probe â€” Railway healthcheck. Always returns 200."""
     return {"ok": True}
 
 
 @app.get("/health")
 async def health():
-    """D-064: Enhanced health check � DB connection, disk, memory, all subsystems.
+    """D-064: Enhanced health check — DB connection, disk, memory, all subsystems.
 
     Returns status: healthy | degraded | unhealthy
     Used by Railway/Vercel health probes and external monitoring.
