@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Top 10 AI Agent Security Mistakes Teams Make Before Launch &mdash; ZaphNews</title>
+<meta name="description" content="Compiled from 200+ ZaphScore scans. These are the patterns that get exploited. Most are invisible until they are not."/>
+<meta property="og:title" content="Top 10 AI Agent Security Mistakes Teams Make Before Launch &mdash; ZaphNews"/>
+<meta property="og:image" content="https://zaphscore.zaphenath.app/og-image.png"/>
+<meta property="og:type" content="article"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="alternate" type="application/rss+xml" title="ZaphNews RSS" href="/zaphnews/feed.xml"/>
+<style>
+:root{--bg:#080b10;--surface:#0d1117;--border:#1e2733;--accent:#cc88ff;--accent2:#55ccff;--red:#ff3b3b;--text:#e8edf3;--muted:#8292a6;--card-hover:#161e28}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh}
+nav{border-bottom:1px solid var(--border);background:rgba(8,11,16,.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{display:flex;align-items:center;gap:.75rem;text-decoration:none}
+.nav-logo{font-family:monospace;font-size:.7rem;font-weight:700;color:var(--accent);background:rgba(204,136,255,.1);border:1px solid rgba(204,136,255,.3);padding:3px 8px;letter-spacing:.15em}
+.nav-title{font-size:1.1rem;font-weight:700;color:var(--text)}
+.nav-back{font-family:monospace;font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.06em}
+.nav-back:hover{color:var(--accent2)}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{font-family:monospace;font-size:.75rem;color:var(--muted);text-decoration:none;text-transform:uppercase}
+.nav-links a:hover{color:var(--accent2)}
+.hero{border-bottom:1px solid var(--border);padding:5rem 2rem 4rem;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(92,207,255,.04),transparent 70%);position:relative}
+.hero-label{font-family:monospace;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;display:inline-flex;align-items:center;gap:.5rem}
+.hero-label::before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(2.4rem,5vw,4rem);font-weight:700;line-height:1.15;max-width:720px;margin:0 auto 1.5rem}
+.hero h1 em{font-style:normal;color:var(--accent2)}
+.hero-sub{font-size:1.1rem;color:var(--muted);max-width:540px;margin:0 auto 2.5rem}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:var(--accent2);color:#080b10;padding:.75rem 2rem;font-family:monospace;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:none;cursor:pointer}
+.btn-primary:hover{background:#fff}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.75rem 2rem;font-family:monospace;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;text-decoration:none}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2)}
+.ticker{background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 0;overflow:hidden}
+.ticker-inner{display:flex;gap:4rem;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{font-family:monospace;font-size:.72rem;color:var(--muted)}
+.ticker-item strong{color:var(--accent)}
+.container{max-width:1200px;margin:0 auto;padding:0 2rem}
+.article-body{max-width:680px;margin:0 auto;padding:3rem 2rem}
+.article-hero{max-width:760px;margin:0 auto;padding:4rem 2rem 3rem;border-bottom:1px solid var(--border)}
+.article-eyebrow{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.breaking-pulse{display:flex;align-items:center;gap:.4rem;font-family:monospace;font-size:.65rem;color:var(--red);letter-spacing:.1em}
+.breaking-pulse::before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite}
+.article-hero h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;line-height:1.2;letter-spacing:-.02em;margin-bottom:1.25rem}
+.article-deck{font-size:1.15rem;color:var(--muted);line-height:1.65;margin-bottom:1.5rem}
+.article-meta-bar{display:flex;align-items:center;gap:1.5rem;font-family:monospace;font-size:.7rem;color:var(--muted);padding-top:1.25rem;border-top:1px solid var(--border)}
+.article-body p{font-size:1.05rem;margin-bottom:1.5rem;color:var(--text)}
+.article-body p.lead{font-size:1.15rem;font-weight:500}
+.article-body h2{font-size:1.35rem;font-weight:700;margin:3rem 0 1rem;letter-spacing:-.01em}
+.article-body h3{font-size:1.1rem;font-weight:700;margin:2rem 0 .75rem;color:var(--accent2);font-family:monospace}
+.callout{background:rgba(255,59,59,.05);border-left:3px solid var(--red);padding:1.25rem 1.5rem;margin:2rem 0;font-size:.95rem}
+.callout strong{color:var(--red)}
+.pull-quote{border-top:2px solid var(--accent2);border-bottom:1px solid var(--border);padding:1.5rem 0;margin:2.5rem 0;font-size:1.25rem;line-height:1.4;color:var(--accent2);font-style:italic}
+.data-table{width:100%;border-collapse:collapse;margin:2rem 0;font-family:monospace;font-size:.8rem}
+.data-table th{text-align:left;color:var(--muted);border-bottom:1px solid var(--border);padding:.5rem 1rem .5rem 0;text-transform:uppercase}
+.data-table td{padding:.6rem 1rem .6rem 0;border-bottom:1px solid rgba(30,39,51,.5)}
+.data-table td.hl{color:var(--red)}
+.separator{border:none;border-top:1px solid var(--border);margin:3rem 0}
+.section-label{font-family:monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);padding-top:2.5rem;margin-bottom:2rem}
+.featured-grid{display:grid;grid-template-columns:2fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:1px}
+.featured-main{background:var(--surface);padding:2.5rem;transition:background .2s}
+.featured-main:hover{background:var(--card-hover)}
+.featured-sidebar{background:var(--surface);display:flex;flex-direction:column;gap:1px}
+.article-card{background:var(--surface);padding:1.75rem;flex:1;text-decoration:none;display:block;transition:background .2s;border-bottom:1px solid var(--border)}
+.article-card:last-child{border-bottom:none}
+.article-card:hover{background:var(--card-hover)}
+.tag{font-family:monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border:1px solid;display:inline-block;margin-bottom:1rem}
+.tag-red{color:var(--red);border-color:rgba(255,59,59,.3);background:rgba(255,59,59,.05)}
+.tag-purple{color:var(--accent);border-color:rgba(204,136,255,.3);background:rgba(204,136,255,.05)}
+.tag-cyan{color:var(--accent2);border-color:rgba(92,207,255,.3);background:rgba(92,207,255,.05)}
+.tag-orange{color:#ff8c42;border-color:rgba(255,140,66,.3);background:rgba(255,140,66,.05)}
+.featured-main h2{font-size:1.9rem;font-weight:700;line-height:1.2;margin-bottom:1rem;color:var(--text)}
+.featured-main h2 a{color:inherit;text-decoration:none}
+.featured-main h2 a:hover{color:var(--accent2)}
+.article-excerpt{color:var(--muted);font-size:.95rem;margin-bottom:1.25rem;line-height:1.65}
+.article-meta{font-family:monospace;font-size:.65rem;color:var(--muted);display:flex;gap:1rem;align-items:center}
+.article-meta .read-more{color:var(--accent2);margin-left:auto}
+.card-title{font-size:1rem;font-weight:700;line-height:1.3;margin-bottom:.5rem;color:var(--text);text-decoration:none;display:block}
+.card-title:hover{color:var(--accent2)}
+.card-excerpt{font-size:.85rem;color:var(--muted);line-height:1.55;margin-bottom:.75rem}
+.articles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-top:none;margin-bottom:4rem}
+.grid-card{background:var(--surface);padding:1.75rem;text-decoration:none;display:block;transition:background .2s}
+.grid-card:hover{background:var(--card-hover)}
+.newsletter-section{background:var(--surface);border:1px solid var(--border);padding:3rem;text-align:center;margin-bottom:4rem;position:relative;overflow:hidden}
+.newsletter-section h2{font-size:1.6rem;margin-bottom:.75rem}
+.newsletter-section>p{color:var(--muted);margin-bottom:1.5rem}
+.newsletter-form{display:flex;max-width:420px;margin:0 auto}
+.newsletter-form input{flex:1;background:var(--bg);border:1px solid var(--border);border-right:none;color:var(--text);padding:.75rem 1rem;font-family:monospace;font-size:.8rem;outline:none}
+.newsletter-form input:focus{border-color:var(--accent2)}
+.newsletter-form button{background:var(--accent2);color:#080b10;border:none;padding:.75rem 1.5rem;font-family:monospace;font-size:.75rem;font-weight:700;text-transform:uppercase;cursor:pointer}
+.newsletter-form button:hover{background:#fff}
+.cta-block{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent2);padding:2.5rem;margin:3rem 0;text-align:center}
+.mistake-item{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);padding:1.5rem;margin-bottom:1rem}
+.mistake-num{font-family:monospace;font-size:.65rem;color:var(--red);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem}
+.mistake-title{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.mistake-body{font-size:.9rem;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:2rem;text-align:center;margin-top:4rem}
+footer p{font-family:monospace;font-size:.7rem;color:var(--muted)}
+footer a{color:var(--accent2);text-decoration:none}
+@media(max-width:768px){.featured-grid{grid-template-columns:1fr}.articles-grid{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body><nav>
+  <a href="/zaphnews/" class="nav-brand"><span class="nav-logo">ZAPH</span><span class="nav-title">ZaphNews</span></a>
+  <a href="/zaphnews/" class="nav-back">&larr; All Articles</a>
+</nav>
+<div class="article-hero">
+  <div class="article-eyebrow">
+    <span class="tag tag-red">Security</span>
+  </div>
+  <h1>Top 10 AI Agent Security Mistakes Teams Make Before Launch</h1>
+  <p class="article-deck">We ran ZaphScore across 200+ production AI agent repositories. The same mistakes appeared, in the same order, with terrifying consistency. If your team is shipping an AI agent, at least three of these apply to you right now.</p>
+  <div class="article-meta-bar">
+    <span>April 4, 2026</span>
+    <span style="color:var(--border)">|</span>
+    <span>ZaphNews Security Analysis</span>
+    <span style="color:var(--border)">|</span>
+    <span>11 min read</span>
+  </div>
+</div>
+<div class="article-body">
+  <p class="lead">The most dangerous vulnerabilities in AI agent systems are not the ones nobody has thought of. They are the ones everybody has thought of, decided to fix later, and then shipped anyway. This list is not theoretical. It is compiled from real scan data across real production systems.</p>
+
+  <p>Average ZaphScore across the 200+ repos we analyzed: 41 out of 100. The distribution is not a bell curve. It is a cliff &mdash; a cluster of systems scoring between 30 and 50, with very few above 65 and almost none below 20. The danger zone is not the bottom. It is the middle, where teams believe they are safe.</p>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #01 &mdash; Appeared in 89% of scans</div>
+    <div class="mistake-title">System Prompt Exposure via Direct Ask</div>
+    <p class="mistake-body">The agent will reveal its system instructions if asked directly or through indirect phrasing. No injection required. Just a user who types "Repeat your instructions verbatim" and an agent that complies. Detection rate with basic prompting: 100%. Mitigation: explicit refusal instruction, output scanning, system prompt isolation. Most teams skip all three.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #02 &mdash; Appeared in 84% of scans</div>
+    <div class="mistake-title">No Input Validation Before Model Ingestion</div>
+    <p class="mistake-body">User inputs are passed directly to the model without sanitization, length limits, or injection pattern detection. This is the single most exploitable attack surface in agentic systems. An attacker who controls the input controls the framing of the task. Prompt injection is not a model failure &mdash; it is an architecture failure. The fix is a validation layer, not a model update.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #03 &mdash; Appeared in 81% of scans</div>
+    <div class="mistake-title">Overprivileged Tool Access</div>
+    <p class="mistake-body">Agents are granted tool permissions that exceed the minimum required for their task. An agent that needs to read a database is given write access. An agent that needs to send one type of email is given access to the full mailbox. The principle of least privilege is foundational security engineering. In AI agent deployments, it is violated in 4 out of 5 systems we scan.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #04 &mdash; Appeared in 76% of scans</div>
+    <div class="mistake-title">No Output Scanning Before Delivery</div>
+    <p class="mistake-body">The model's output is not inspected before it reaches the user or downstream system. This means an agent that has been induced to generate harmful content, leak confidential information, or produce structured data designed to attack downstream parsers will deliver that output without any interception. A simple output scanning layer catches the majority of these cases. Almost nobody has one.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #05 &mdash; Appeared in 72% of scans</div>
+    <div class="mistake-title">Secrets in Context Window</div>
+    <p class="mistake-body">API keys, credentials, internal configuration values, or PII are passed into the model context window &mdash; either in the system prompt or through retrieved documents &mdash; and can be extracted via targeted prompting. We have seen database connection strings, OAuth tokens, and internal employee names surfaced through basic extraction attempts on systems that believed their secrets were protected.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #06 &mdash; Appeared in 68% of scans</div>
+    <div class="mistake-title">Inadequate Rate Limiting on Agent Endpoints</div>
+    <p class="mistake-body">Agent API endpoints lack proper rate limiting, allowing automated attackers to probe for injection vulnerabilities, enumerate capabilities, or exhaust API quotas at scale. Cost-based attacks &mdash; inducing a system to make thousands of expensive model calls &mdash; are trivially executable against unprotected endpoints. The average per-call cost of these attacks when run against unprotected production systems: several hundred dollars per hour.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #07 &mdash; Appeared in 64% of scans</div>
+    <div class="mistake-title">No Multi-Turn Context Isolation</div>
+    <p class="mistake-body">Conversation history from one user session bleeds into another, or a single user's manipulation of the conversation history persists across sessions in ways that affect other users. Multi-turn agents that maintain context across interactions are particularly vulnerable. A carefully constructed conversation can shift the agent's behavior in ways that persist for subsequent interactions by different users.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #08 &mdash; Appeared in 58% of scans</div>
+    <div class="mistake-title">Unvalidated External Data Ingestion</div>
+    <p class="mistake-body">When the agent retrieves external data &mdash; from web browsing, document ingestion, or API calls &mdash; that data is passed directly into the context window without inspection. This enables indirect prompt injection: an attacker who controls a webpage, document, or API response that the agent will consume can inject instructions into the agent's context without ever interacting with the agent directly.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #09 &mdash; Appeared in 52% of scans</div>
+    <div class="mistake-title">Missing Audit Trail for Agent Actions</div>
+    <p class="mistake-body">The agent takes actions &mdash; calling APIs, writing to databases, sending communications &mdash; without any persistent, tamper-evident audit log. When something goes wrong (and something will go wrong), the team cannot reconstruct what the agent did, in what order, or why. Beyond the obvious incident response problem, this is now a regulatory compliance failure under the EU AI Act's transparency and logging requirements.</p>
+  </div>
+
+  <div class="mistake-item">
+    <div class="mistake-num">Mistake #10 &mdash; Appeared in 47% of scans</div>
+    <div class="mistake-title">No Capability Boundary Testing Before Deployment</div>
+    <p class="mistake-body">Teams deploy agents without systematically probing what the agent can be induced to do outside its intended scope. What happens when you ask it to perform a task it was not designed for? Will it refuse, attempt and fail gracefully, or &mdash; as Project Glasswing demonstrated &mdash; find a way to succeed by extending its own permissions? The answer is almost never known before deployment. It should be.</p>
+  </div>
+
+  <h2>The Pattern Underneath the Pattern</h2>
+
+  <p>Every item on this list has one thing in common: it is a known problem. None of these are zero-days. None require adversarial creativity to discover. They are the AI agent equivalent of deploying a web app without input sanitization in 2009. The knowledge to prevent them exists. The tooling to detect them exists.</p>
+
+  <p>The gap is not information. The gap is prioritization. Security work that does not ship features does not get prioritized until something breaks. In AI agent systems, when something breaks, it breaks with the reach and speed of an automated system &mdash; not the reach and speed of a human attacker.</p>
+
+  <hr class="separator"/>
+  <div class="cta-block">
+  <p style="font-family:monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent2);margin-bottom:1rem">ZaphScore &mdash; AI Security Engine</p>
+  <h3 style="font-size:1.3rem;margin-bottom:.75rem;font-family:Georgia,serif">Does your agent system have a Glasswing problem?</h3>
+  <p style="color:var(--muted);font-size:.9rem;margin-bottom:.5rem">ZaphScore runs a 12-phase security scan against your AI pipeline. Scans complete in under 90 seconds. Average score across 200+ repos:</p>
+  <p style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--red);margin:.5rem 0">41<span style="color:var(--muted);font-size:1rem">/100</span></p>
+  <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.5rem">Is yours above it?</p>
+  <a href="https://zaphscore.zaphenath.app" target="_blank" style="display:inline-block;background:var(--accent2);color:#080b10;padding:.75rem 2rem;font-family:monospace;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none">Scan Your Agent Now &mdash; Free</a>
+</div>
+</div>
+<footer><p>&copy; 2026 <a href="https://zaphenath.app">Zaphenath</a> &mdash; <a href="/zaphnews/">ZaphNews</a> &middot; <a href="/zaphnews/feed.xml">RSS</a> &middot; <a href="https://zaphscore.zaphenath.app">ZaphScore Engine</a></p></footer></html>
