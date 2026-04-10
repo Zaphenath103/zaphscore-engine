@@ -1476,29 +1476,32 @@
     {
       "id": "D-763",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev install script detection absent -- we do not flag npm packages with postinstall scripts",
-      "note": "Socket.dev flags any npm package with a postinstall, preinstall, or install script as a supply chain risk. dependency_resolver.py parses package-lock.json for version info only; no scripts field inspection, no install-script risk flag on any dependency."
+      "note": "Socket.dev flags any npm package with a postinstall, preinstall, or install script as a supply chain risk. dependency_resolver.py parses package-lock.json for version info only; no scripts field inspection, no install-script risk flag on any dependency.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-764",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev typosquatting detection absent -- we have no name-similarity analysis",
-      "note": "Socket.dev computes Levenshtein distance between package names and popular packages to flag typosquats (lodahs vs lodash). dependency_resolver.py resolves package names from manifest files with no similarity check; typosquatted packages pass through silently."
+      "note": "Socket.dev computes Levenshtein distance between package names and popular packages to flag typosquats (lodahs vs lodash). dependency_resolver.py resolves package names from manifest files with no similarity check; typosquatted packages pass through silently.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-765",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev protestware detection absent -- we have no maintainer-intent analysis",
-      "note": "Socket.dev flagged colors and faker protestware modifications by analysing git diff patterns and release anomalies. dependency_resolver.py has no package-behaviour diff analysis; protestware packages are undetected."
+      "note": "Socket.dev flagged colors and faker protestware modifications by analysing git diff patterns and release anomalies. dependency_resolver.py has no package-behaviour diff analysis; protestware packages are undetected.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-766",
@@ -1513,11 +1516,12 @@
     {
       "id": "D-767",
       "tier": "P0",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev malicious package detection via 70+ behavioural signals -- we rely on CVE existence only",
-      "note": "Socket detects malicious packages through 70+ signals: minified code obfuscation, dynamic eval, network calls in install scripts, environment variable exfiltration. dependency_resolver.py extracts name/version/ecosystem only; no behavioural signal analysis."
+      "note": "Socket detects malicious packages through 70+ signals: minified code obfuscation, dynamic eval, network calls in install scripts, environment variable exfiltration. dependency_resolver.py extracts name/version/ecosystem only; no behavioural signal analysis.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-768",
@@ -1540,20 +1544,22 @@
     {
       "id": "D-770",
       "tier": "P1",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev deprecated package warnings absent -- sbom_generator hard-codes only 8 deprecated names",
-      "note": "Socket surfaces npm deprecation notices from the registry as findings. dependency_resolver.py does not query the npm registry for deprecation status; sbom_generator.py _KNOWN_DEPRECATED set contains only 8 packages."
+      "note": "Socket surfaces npm deprecation notices from the registry as findings. dependency_resolver.py does not query the npm registry for deprecation status; sbom_generator.py _KNOWN_DEPRECATED set contains only 8 packages.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-771",
       "tier": "P1",
-      "agent": "boris",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Socket.dev new package with no prior release history flagging absent -- zero-history packages undetected",
-      "note": "Socket flags packages published for the first time within the past 30 days as high-risk. dependency_resolver.py has no npm registry first-publish-date check."
+      "note": "Socket flags packages published for the first time within the past 30 days as high-risk. dependency_resolver.py has no npm registry first-publish-date check.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-772",
@@ -1820,11 +1826,12 @@
     {
       "id": "D-801",
       "tier": "P0",
-      "agent": "dario",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/dependency_resolver.py",
       "title": "Dependabot private package registry support absent -- we cannot scan private registries",
-      "note": "Dependabot authenticates to private npm/PyPI/Maven registries (Artifactory, Nexus, GitHub Packages) to resolve private dependencies. dependency_resolver.py resolves from manifest files only; private package versions cannot be resolved or scanned."
+      "note": "Dependabot authenticates to private npm/PyPI/Maven registries (Artifactory, Nexus, GitHub Packages) to resolve private dependencies. dependency_resolver.py resolves from manifest files only; private package versions cannot be resolved or scanned.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-802",

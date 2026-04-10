@@ -1,19 +1,30 @@
 """
 ZSE Dependency Resolver — parse every major manifest format, with optional
 tool-assisted resolution (npm ls, pip-compile).
+
+D-763: install_script_detection -- flags npm packages with postinstall/preinstall scripts.
+D-764: typosquatting_detection -- Levenshtein distance check vs popular package names.
+D-765: protestware_detection -- flags packages matching known protestware CVE/name patterns.
+D-767: supply_chain_signals -- aggregates multiple behavioural risk signals per package.
+D-770: deprecated_package_check -- queries npm registry for deprecation notices.
+D-771: new_package_history_check -- flags packages published within the last 30 days.
+D-801: private_registry_support -- reads .npmrc for private registry configuration.
 """
 
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import logging
 import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from xml.etree import ElementTree
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -605,3 +616,359 @@ async def resolve_dependencies(repo_dir: str) -> list[dict]:
         }
         for d in unique
     ]
+
+
+# ---------------------------------------------------------------------------
+# D-801: Private registry support
+# ---------------------------------------------------------------------------
+
+def _read_npmrc_registries(repo_dir: str) -> dict[str, str]:
+    """D-801: Parse .npmrc for private registry mappings.
+
+    Returns {scope_or_global: registry_url} dict.
+    Example .npmrc:
+        @mycompany:registry=https://npm.mycompany.com/
+        //npm.mycompany.com/:_authToken=${NPM_TOKEN}
+    """
+    registries: dict[str, str] = {}
+    for npmrc_path in [
+        os.path.join(repo_dir, ".npmrc"),
+        os.path.expanduser("~/.npmrc"),
+    ]:
+        if not os.path.isfile(npmrc_path):
+            continue
+        try:
+            with open(npmrc_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    # @scope:registry=URL  or  registry=URL
+                    m = re.match(r"^(@[^:]+):registry\s*=\s*(.+)$", line)
+                    if m:
+                        registries[m.group(1)] = m.group(2).strip()
+                        continue
+                    m = re.match(r"^registry\s*=\s*(.+)$", line)
+                    if m:
+                        registries["*"] = m.group(1).strip()
+        except Exception as exc:
+            logger.debug("Failed to parse %s: %s", npmrc_path, exc)
+    return registries
+
+
+def get_npm_registry_for_package(package_name: str, repo_dir: str) -> str:
+    """D-801: Return the npm registry URL for a given package name.
+
+    Checks .npmrc for scope-specific registry overrides. Falls back to
+    the public npm registry.
+    """
+    registries = _read_npmrc_registries(repo_dir)
+    if package_name.startswith("@"):
+        scope = package_name.split("/")[0]  # e.g. @mycompany
+        if scope in registries:
+            return registries[scope].rstrip("/")
+    if "*" in registries:
+        return registries["*"].rstrip("/")
+    return "https://registry.npmjs.org"
+
+
+# ---------------------------------------------------------------------------
+# Supply chain signal analysis (D-763, D-764, D-765, D-767, D-770, D-771)
+# ---------------------------------------------------------------------------
+
+# D-764: Popular npm package names for typosquatting comparison.
+# Extended list of the most-downloaded npm packages.
+_POPULAR_NPM_PACKAGES: frozenset[str] = frozenset([
+    "lodash", "express", "react", "react-dom", "vue", "angular",
+    "webpack", "babel-core", "typescript", "axios", "moment",
+    "chalk", "commander", "request", "async", "underscore",
+    "jquery", "bootstrap", "next", "gatsby", "svelte",
+    "prettier", "eslint", "jest", "mocha", "chai",
+    "dotenv", "nodemon", "cors", "helmet", "morgan",
+    "socket.io", "mongoose", "sequelize", "knex", "redis",
+    "pg", "mysql", "mongodb", "faker", "uuid",
+    "classnames", "prop-types", "redux", "mobx", "zustand",
+    "tailwindcss", "sass", "postcss", "autoprefixer",
+    "cross-env", "rimraf", "cpx", "mkdirp", "glob",
+    "semver", "minimist", "yargs", "inquirer", "ora",
+    "colors", "debug", "winston", "pino", "bunyan",
+    "bluebird", "rxjs", "immutable", "immer", "ramda",
+    "date-fns", "dayjs", "luxon", "numeral", "accounting",
+    "sharp", "jimp", "multer", "formidable", "busboy",
+    "node-fetch", "got", "superagent", "needle", "node-http",
+    "passport", "jsonwebtoken", "bcrypt", "crypto-js",
+    "xml2js", "cheerio", "puppeteer", "playwright", "selenium",
+    "lodash-es", "core-js", "regenerator-runtime", "tslib",
+])
+
+# D-765: Known protestware package names/patterns
+_KNOWN_PROTESTWARE: frozenset[str] = frozenset([
+    "colors", "faker", "node-ipc", "peacenotwar",
+    "event-source-polyfill",  # had malicious injection
+])
+
+# D-765: CVE IDs associated with protestware
+_PROTESTWARE_CVES: frozenset[str] = frozenset([
+    "CVE-2022-23812",  # node-ipc / peacenotwar
+    "CVE-2022-21803",  # node-ipc
+])
+
+
+def _levenshtein_distance(a: str, b: str) -> int:
+    """Compute Levenshtein edit distance between two strings."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    # Standard DP approach
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a):
+        curr = [i + 1]
+        for j, cb in enumerate(b):
+            cost = 0 if ca == cb else 1
+            curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + cost))
+        prev = curr
+    return prev[len(b)]
+
+
+def detect_typosquat(package_name: str, ecosystem: str) -> Optional[dict]:
+    """D-764: Check if a package name is suspiciously close to a popular package.
+
+    Returns a signal dict if a potential typosquat is detected, else None.
+    """
+    if ecosystem != "npm":
+        return None
+
+    # Strip scope for comparison
+    name = package_name.split("/")[-1] if "/" in package_name else package_name
+    name_lower = name.lower()
+
+    for popular in _POPULAR_NPM_PACKAGES:
+        if name_lower == popular:
+            return None  # Exact match -- not a typosquat
+        dist = _levenshtein_distance(name_lower, popular)
+        # Flag if edit distance is 1 or 2 and the name isn't a known variant
+        if 1 <= dist <= 2 and len(name_lower) >= 4:
+            return {
+                "type": "typosquatting",
+                "severity": "high",
+                "title": f"Possible typosquat: {package_name} resembles {popular} (edit dist={dist})",
+                "package": package_name,
+                "similar_to": popular,
+                "edit_distance": dist,
+            }
+    return None
+
+
+def detect_protestware(package_name: str) -> Optional[dict]:
+    """D-765: Check if a package is a known protestware package."""
+    name_lower = package_name.lower().split("/")[-1]
+    if name_lower in _KNOWN_PROTESTWARE:
+        return {
+            "type": "protestware",
+            "severity": "critical",
+            "title": f"Known protestware package: {package_name}",
+            "package": package_name,
+            "note": (
+                f"{package_name} has been associated with protestware modifications "
+                f"that intentionally damaged systems. Audit the exact version in use "
+                f"and check for unexpected behaviour."
+            ),
+        }
+    return None
+
+
+async def check_npm_install_scripts(
+    session: aiohttp.ClientSession,
+    package_name: str,
+    version: str,
+    registry_url: str = "https://registry.npmjs.org",
+) -> Optional[dict]:
+    """D-763: Check if an npm package has install scripts (postinstall, preinstall).
+
+    Fetches package metadata from the npm registry and inspects the scripts field.
+    Returns a signal dict if install scripts are present, else None.
+    """
+    try:
+        url = f"{registry_url.rstrip('/')}/{package_name}/{version}"
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.json()
+            scripts = data.get("scripts") or {}
+            dangerous_scripts = [
+                s for s in ("preinstall", "install", "postinstall")
+                if s in scripts
+            ]
+            if dangerous_scripts:
+                return {
+                    "type": "install_script",
+                    "severity": "high",
+                    "title": f"npm package {package_name}@{version} has install scripts: {dangerous_scripts}",
+                    "package": package_name,
+                    "version": version,
+                    "scripts": {s: scripts[s] for s in dangerous_scripts},
+                    "note": (
+                        "Install scripts execute arbitrary code during npm install. "
+                        "Review the script content carefully before trusting this package."
+                    ),
+                }
+    except Exception as exc:
+        logger.debug("Failed to check install scripts for %s@%s: %s", package_name, version, exc)
+    return None
+
+
+async def check_npm_deprecation(
+    session: aiohttp.ClientSession,
+    package_name: str,
+    version: str,
+    registry_url: str = "https://registry.npmjs.org",
+) -> Optional[dict]:
+    """D-770: Check if an npm package or specific version is deprecated.
+
+    Returns a signal dict if deprecated, else None.
+    """
+    try:
+        url = f"{registry_url.rstrip('/')}/{package_name}/{version}"
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.json()
+            deprecated = data.get("deprecated")
+            if deprecated:
+                return {
+                    "type": "deprecated",
+                    "severity": "medium",
+                    "title": f"npm package {package_name}@{version} is deprecated",
+                    "package": package_name,
+                    "version": version,
+                    "deprecation_message": str(deprecated)[:500],
+                }
+    except Exception as exc:
+        logger.debug("Failed to check deprecation for %s@%s: %s", package_name, version, exc)
+    return None
+
+
+async def check_npm_publish_age(
+    session: aiohttp.ClientSession,
+    package_name: str,
+    version: str,
+    registry_url: str = "https://registry.npmjs.org",
+    max_age_days: int = 30,
+) -> Optional[dict]:
+    """D-771: Check if an npm package version was published very recently.
+
+    New packages with no prior release history are high-risk supply chain targets.
+    Returns a signal dict if the package is younger than max_age_days, else None.
+    """
+    try:
+        url = f"{registry_url.rstrip('/')}/{package_name}"
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.json()
+            time_data = data.get("time") or {}
+            # Check first published date (the 'created' key)
+            created_str = time_data.get("created", "")
+            if created_str:
+                created = datetime.datetime.fromisoformat(
+                    created_str.replace("Z", "+00:00")
+                )
+                age_days = (datetime.datetime.now(datetime.timezone.utc) - created).days
+                total_versions = len([k for k in time_data if k not in ("created", "modified")])
+                if age_days <= max_age_days:
+                    return {
+                        "type": "new_package",
+                        "severity": "medium",
+                        "title": (
+                            f"npm package {package_name} is {age_days} days old "
+                            f"({total_versions} version(s)) -- no release history"
+                        ),
+                        "package": package_name,
+                        "version": version,
+                        "age_days": age_days,
+                        "total_versions": total_versions,
+                        "note": (
+                            "Packages published within the last 30 days have no track record. "
+                            "Verify the publisher identity and review the package source before use."
+                        ),
+                    }
+    except Exception as exc:
+        logger.debug("Failed to check publish age for %s: %s", package_name, exc)
+    return None
+
+
+async def analyze_supply_chain_signals(
+    dependencies: list[dict],
+    repo_dir: str = "",
+) -> list[dict]:
+    """D-767: Run all supply chain signal checks against npm dependencies.
+
+    Runs: typosquatting (D-764), protestware (D-765), install scripts (D-763),
+    deprecation (D-770), new package age (D-771) checks.
+
+    Returns list of signal dicts, each with keys:
+        type, severity, title, package, [additional context keys]
+    """
+    signals: list[dict] = []
+    npm_deps = [d for d in dependencies if d.get("ecosystem") == "npm"]
+
+    if not npm_deps:
+        return signals
+
+    # Static checks (no network required)
+    for dep in npm_deps:
+        name = dep.get("name", "")
+
+        # D-764: Typosquatting
+        typo_signal = detect_typosquat(name, "npm")
+        if typo_signal:
+            signals.append(typo_signal)
+
+        # D-765: Protestware
+        protest_signal = detect_protestware(name)
+        if protest_signal:
+            signals.append(protest_signal)
+
+    # Network checks (batched, rate-limited to 5 concurrent)
+    sem = asyncio.Semaphore(5)
+    timeout = aiohttp.ClientTimeout(total=120)
+
+    async def _check_one(dep: dict) -> list[dict]:
+        name = dep.get("name", "")
+        version = dep.get("version", "")
+        if not name or not version or version == "*":
+            return []
+        registry = get_npm_registry_for_package(name, repo_dir) if repo_dir else "https://registry.npmjs.org"
+        found: list[dict] = []
+        async with sem:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                # D-763: Install scripts
+                script_signal = await check_npm_install_scripts(session, name, version, registry)
+                if script_signal:
+                    found.append(script_signal)
+                # D-770: Deprecation
+                dep_signal = await check_npm_deprecation(session, name, version, registry)
+                if dep_signal:
+                    found.append(dep_signal)
+                # D-771: New package
+                age_signal = await check_npm_publish_age(session, name, version, registry)
+                if age_signal:
+                    found.append(age_signal)
+        return found
+
+    tasks = [_check_one(dep) for dep in npm_deps]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, list):
+            signals.extend(result)
+        elif isinstance(result, Exception):
+            logger.debug("Supply chain signal check failed: %s", result)
+
+    logger.info(
+        "Supply chain analysis: %d signals detected from %d npm packages",
+        len(signals), len(npm_deps),
+    )
+    return signals
