@@ -2108,20 +2108,22 @@
     {
       "id": "D-833",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: no contextual weight adjustment for repo type -- a library scores the same as a deployed API",
-      "note": "calculate_score() applies fixed _WEIGHTS regardless of repo context. Snyk and Dependabot apply higher weights to vulns in production-deployed services vs internal libraries. scorer.py has no repo_type parameter; a test fixture repo and a customer-facing API receive identical score penalties."
+      "note": "calculate_score() applies fixed _WEIGHTS regardless of repo context. Snyk and Dependabot apply higher weights to vulns in production-deployed services vs internal libraries. scorer.py has no repo_type parameter; a test fixture repo and a customer-facing API receive identical score penalties.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-834",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: CVSS score not used to modulate deduction -- 4-band discretisation loses 80% of CVSS signal",
-      "note": "_DEDUCTIONS maps Severity enum (critical/high/medium/low) to fixed point values. A CVSS 9.1 and a CVSS 9.9 both deduct 15 points as critical. Snyk Priority Score uses the actual CVSS numeric value; our 4-band discretisation loses 80% of the CVSS signal."
+      "note": "_DEDUCTIONS maps Severity enum (critical/high/medium/low) to fixed point values. A CVSS 9.1 and a CVSS 9.9 both deduct 15 points as critical. Snyk Priority Score uses the actual CVSS numeric value; our 4-band discretisation loses 80% of the CVSS signal.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-835",
@@ -2136,11 +2138,12 @@
     {
       "id": "D-836",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: no penalty for missing SBOM -- repos with no SBOM score the same as repos with full SBOM",
-      "note": "calculate_score() has no SBOM-presence check. Snyk and Socket reward repos with a valid CycloneDX SBOM. scorer.py gives no bonus for SBOM presence and no penalty for absence; SBOM adoption is not incentivised."
+      "note": "calculate_score() has no SBOM-presence check. Snyk and Socket reward repos with a valid CycloneDX SBOM. scorer.py gives no bonus for SBOM presence and no penalty for absence; SBOM adoption is not incentivised.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-837",
