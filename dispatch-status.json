@@ -1124,10 +1124,11 @@
       "id": "D-723",
       "tier": "P0",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep 2000+ community rules via registry -- we use single --config auto with no rule pinning",
-      "note": "Semgrep Registry hosts 2000+ curated rules updated continuously. sast_scanner.py runs semgrep --config auto with no version pinning, meaning scans silently change behaviour when the registry updates; enterprise customers require reproducible scans."
+      "note": "Added _SEMGREP_RULESETS list with 11 pinned community registry rulesets (p/security-audit, p/secrets, p/owasp-top-ten, etc.) replacing single --config auto. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-724",
@@ -1151,10 +1152,11 @@
       "id": "D-726",
       "tier": "P0",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/sast_scanner.py",
       "title": "Semgrep secrets detection with entropy analysis absent -- secret scanner uses single-pattern regex",
-      "note": "Semgrep secrets engine combines regex patterns with Shannon entropy scoring to catch high-entropy strings. sast_scanner.py and secret_scanner.py are separate passes with no entropy-augmented regex; high-entropy API keys in non-standard variable names are missed."
+      "note": "Added scan_for_high_entropy_strings() + _shannon_entropy() for entropy-based secret detection (threshold 4.5, min 20 chars). WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-727",
