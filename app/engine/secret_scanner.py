@@ -156,3 +156,134 @@ async def scan_secrets(repo_dir: str) -> list[Finding]:
         logger.error("Secret scan failed: %s", exc, exc_info=True)
 
     return findings
+
+
+# ---------------------------------------------------------------------------
+# D-687: Secret validity checking
+# ---------------------------------------------------------------------------
+
+import aiohttp as _aiohttp
+
+# Lightweight liveness probes per detector type
+_VALIDITY_ENDPOINTS: dict = {
+    "GitHub": {
+        "url": "https://api.github.com/user",
+        "header": "Authorization",
+        "prefix": "token ",
+        "valid_codes": {200},
+        "invalid_codes": {401},
+    },
+    "GitHubOauth2": {
+        "url": "https://api.github.com/user",
+        "header": "Authorization",
+        "prefix": "Bearer ",
+        "valid_codes": {200},
+        "invalid_codes": {401},
+    },
+    "Stripe": {
+        "url": "https://api.stripe.com/v1/account",
+        "header": "Authorization",
+        "prefix": "Bearer ",
+        "valid_codes": {200},
+        "invalid_codes": {401, 403},
+    },
+}
+
+
+async def check_secret_validity(
+    detector_name: str,
+    raw_secret: str,
+    already_verified: bool,
+) -> tuple:
+    """D-687: Probe liveness of a detected secret.
+
+    Args:
+        detector_name: Service name returned by TruffleHog (e.g. 'GitHub').
+        raw_secret: The raw credential value.
+        already_verified: True if TruffleHog already confirmed via its own probe.
+
+    Returns:
+        (is_live, note) where is_live=True if credential is confirmed active.
+    """
+    if already_verified:
+        return True, "Verified active by TruffleHog probe"
+
+    if not raw_secret:
+        return False, "Cannot probe -- secret value unavailable"
+
+    endpoint = _VALIDITY_ENDPOINTS.get(detector_name)
+    if not endpoint:
+        return False, f"Validity probe not implemented for '{detector_name}'"
+
+    try:
+        headers = {
+            endpoint["header"]: endpoint["prefix"] + raw_secret,
+            "User-Agent": "ZaphScore-Engine/0.1 (security-scan)",
+        }
+        timeout = _aiohttp.ClientTimeout(total=8)
+        async with _aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(endpoint["url"], headers=headers) as resp:
+                if resp.status in endpoint.get("valid_codes", set()):
+                    return True, f"Confirmed live via {endpoint['url']} (HTTP {resp.status})"
+                elif resp.status in endpoint.get("invalid_codes", set()):
+                    return False, f"Appears rotated/invalid (HTTP {resp.status})"
+                else:
+                    return False, f"Inconclusive probe (HTTP {resp.status})"
+    except Exception as exc:
+        return False, f"Probe error: {type(exc).__name__} -- treat as potentially live"
+
+
+# ---------------------------------------------------------------------------
+# D-755: Multi-rule secret correlation
+# ---------------------------------------------------------------------------
+
+from collections import defaultdict as _defaultdict
+
+
+def correlate_secrets(raw_findings: list) -> list:
+    """D-755: Group multi-detector hits on the same file into correlated findings.
+
+    When multiple secret detectors fire on the same file, that strongly indicates
+    a credentials dump. Correlated findings are surfaced with elevated severity
+    context listing all detectors found -- mirrors Snyk multi-rule correlation.
+
+    Args:
+        raw_findings: List of raw TruffleHog result dicts.
+
+    Returns:
+        Modified list where same-file multi-detector hits are correlated.
+    """
+    by_file: dict = _defaultdict(list)
+    no_file: list = []
+
+    for result in raw_findings:
+        source_meta = result.get("SourceMetadata", {})
+        source_data = source_meta.get("Data", {})
+        filesystem_data = source_data.get("Filesystem", {})
+        file_path = filesystem_data.get("file", "")
+        if file_path:
+            by_file[file_path].append(result)
+        else:
+            no_file.append(result)
+
+    correlated: list = list(no_file)
+
+    for file_path, results in by_file.items():
+        if len(results) == 1:
+            correlated.extend(results)
+        else:
+            detectors = [_extract_detector_name(r) for r in results]
+            unique_detectors = list(dict.fromkeys(detectors))
+
+            base = dict(results[0])
+            base["_correlated"] = True
+            base["_correlated_detectors"] = unique_detectors
+            base["_correlated_count"] = len(results)
+            correlated.append(base)
+
+            logger.debug(
+                "Correlated %d secret detectors on %s: %s",
+                len(results), file_path, ", ".join(unique_detectors),
+            )
+
+    return correlated

@@ -452,3 +452,209 @@ async def run_scan(
                 logger.debug("[%s] Cleaned up temp dir: %s", scan_id, tmp_dir)
             except Exception as exc:
                 logger.warning("[%s] Failed to clean up %s: %s", scan_id, tmp_dir, exc)
+
+
+# ---------------------------------------------------------------------------
+# D-686: CI/CD fail-fast severity gate
+# ---------------------------------------------------------------------------
+
+import os as _os
+
+class SeverityGateError(Exception):
+    """D-686: Raised when findings exceed the configured severity gate threshold.
+
+    CI/CD pipelines can set ZSE_FAIL_ON_SEVERITY to one of: critical, high,
+    medium, low. If any finding matches or exceeds that severity, run_scan()
+    will raise SeverityGateError with a human-readable message for pipeline
+    fail-fast behaviour.
+    """
+    def __init__(self, message: str, severity: str, count: int):
+        super().__init__(message)
+        self.severity = severity
+        self.count = count
+
+
+_SEVERITY_ORDER = ["info", "low", "medium", "high", "critical"]
+
+
+def check_severity_gate(
+    findings: list,
+    fail_on_severity: Optional[str] = None,
+) -> None:
+    """D-686: Raise SeverityGateError if any finding meets or exceeds the threshold.
+
+    Args:
+        findings: List of Finding objects from the completed scan.
+        fail_on_severity: Threshold severity name (critical/high/medium/low).
+                          Reads ZSE_FAIL_ON_SEVERITY env var if not provided.
+                          None / unset = no gate enforced.
+
+    Raises:
+        SeverityGateError: if the gate is exceeded.
+        ValueError: if the severity name is not recognised.
+    """
+    threshold = fail_on_severity or _os.environ.get("ZSE_FAIL_ON_SEVERITY")
+    if not threshold:
+        return  # no gate configured
+
+    threshold = threshold.lower().strip()
+    if threshold not in _SEVERITY_ORDER:
+        raise ValueError(
+            f"ZSE_FAIL_ON_SEVERITY '{threshold}' is not a valid severity. "
+            f"Must be one of: {', '.join(_SEVERITY_ORDER)}"
+        )
+
+    threshold_idx = _SEVERITY_ORDER.index(threshold)
+    blocking = [
+        f for f in findings
+        if _SEVERITY_ORDER.index(
+            f.severity.value if hasattr(f.severity, "value") else str(f.severity).lower()
+        ) >= threshold_idx
+    ]
+
+    if blocking:
+        sev_counts: dict[str, int] = {}
+        for f in blocking:
+            sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+            sev_counts[sev] = sev_counts.get(sev, 0) + 1
+        breakdown = ", ".join(f"{v} {k}" for k, v in sorted(sev_counts.items(), key=lambda x: _SEVERITY_ORDER.index(x[0]), reverse=True))
+        raise SeverityGateError(
+            f"CI/CD severity gate failed: {len(blocking)} finding(s) at or above "
+            f"'{threshold}' threshold ({breakdown}). "
+            f"Fix or suppress findings before merging.",
+            severity=threshold,
+            count=len(blocking),
+        )
+
+
+# ---------------------------------------------------------------------------
+# D-727: SARIF output generation
+# ---------------------------------------------------------------------------
+
+def findings_to_sarif(
+    findings: list,
+    repo_url: str = "",
+    scan_id: str = "",
+    tool_version: str = "0.6.0",
+) -> dict:
+    """D-727: Convert ZSE findings to SARIF 2.1.0 format.
+
+    SARIF (Static Analysis Results Interchange Format) is the industry standard
+    for security tool output consumed by GitHub Advanced Security, Azure DevOps,
+    VS Code, and all major CI/CD platforms.
+
+    Args:
+        findings: List of Finding objects from the pipeline.
+        repo_url: Repository URL for artifact location context.
+        scan_id: Scan UUID for correlation.
+        tool_version: ZaphScore Engine version string.
+
+    Returns:
+        SARIF 2.1.0 dict ready for json.dumps().
+    """
+    # Build deduplicated rule list from findings
+    rule_ids_seen: set[str] = set()
+    rules: list[dict] = []
+
+    results: list[dict] = []
+
+    for finding in findings:
+        # Derive a stable rule ID from the finding type + title hash
+        finding_type = finding.type.value if hasattr(finding.type, "value") else str(finding.type)
+        sev = finding.severity.value if hasattr(finding.severity, "value") else str(finding.severity)
+        cve = getattr(finding, "cve_id", None) or ""
+        rule_id = cve if cve else f"ZSE-{finding_type.upper()}-{abs(hash(finding.title)) % 100000:05d}"
+
+        if rule_id not in rule_ids_seen:
+            rule_ids_seen.add(rule_id)
+            # Map severity to SARIF level
+            sarif_level_map = {
+                "critical": "error",
+                "high": "error",
+                "medium": "warning",
+                "low": "note",
+                "info": "none",
+            }
+            rules.append({
+                "id": rule_id,
+                "name": finding.title[:128],
+                "shortDescription": {"text": finding.title[:512]},
+                "fullDescription": {"text": (finding.description or finding.title)[:1024]},
+                "defaultConfiguration": {
+                    "level": sarif_level_map.get(sev, "warning"),
+                },
+                "properties": {
+                    "tags": [finding_type, sev],
+                    "security-severity": {
+                        "critical": "9.5",
+                        "high": "8.0",
+                        "medium": "5.5",
+                        "low": "2.0",
+                        "info": "0.0",
+                    }.get(sev, "5.0"),
+                },
+            })
+
+        # Build result location
+        location: dict = {}
+        file_path = getattr(finding, "file_path", None)
+        line_num = getattr(finding, "line", None)
+        if file_path:
+            location = {
+                "physicalLocation": {
+                    "artifactLocation": {
+                        "uri": file_path.replace("\\", "/").lstrip("/"),
+                        "uriBaseId": "%SRCROOT%",
+                    },
+                    "region": {
+                        "startLine": line_num or 1,
+                        "startColumn": 1,
+                    },
+                },
+            }
+
+        result: dict = {
+            "ruleId": rule_id,
+            "level": {
+                "critical": "error",
+                "high": "error",
+                "medium": "warning",
+                "low": "note",
+                "info": "none",
+            }.get(sev, "warning"),
+            "message": {"text": finding.title},
+            "properties": {
+                "severity": sev,
+                "type": finding_type,
+            },
+        }
+        if location:
+            result["locations"] = [location]
+        if cve:
+            result["relatedLocations"] = []
+            result["properties"]["cve"] = cve
+
+        results.append(result)
+
+    sarif = {
+        "version": "2.1.0",
+        "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "ZaphScore Engine",
+                        "version": tool_version,
+                        "informationUri": "https://zaphscore.zaphenath.app",
+                        "rules": rules,
+                    },
+                },
+                "results": results,
+                "properties": {
+                    "scan_id": str(scan_id),
+                    "repo_url": repo_url,
+                },
+            }
+        ],
+    }
+    return sarif
