@@ -47,6 +47,23 @@ async def lifespan(app: FastAPI):
 
     logger.info("ZSE starting up... PORT=%s", os.environ.get("PORT", "not set"))
 
+    # D-060: Sentry error tracking
+    try:
+        if settings.SENTRY_DSN:
+            import sentry_sdk
+            from sentry_sdk.integrations.fastapi import FastApiIntegration
+            from sentry_sdk.integrations.starlette import StarletteIntegration
+            sentry_sdk.init(
+                dsn=settings.SENTRY_DSN,
+                traces_sample_rate=0.1,
+                environment="production" if (os.environ.get("VERCEL") or os.environ.get("RAILWAY_ENVIRONMENT")) else "development",
+                integrations=[StarletteIntegration(), FastApiIntegration()],
+                send_default_pii=False,
+            )
+            logger.info("Sentry error tracking initialized")
+    except Exception as e:
+        logger.warning("Sentry init failed (non-fatal): %s", e)
+
     # D-033: Validate required env vars — log warnings, fail-fast in production
     try:
         from app.config import validate_required_env_vars

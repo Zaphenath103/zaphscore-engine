@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_PRO: str = "100/hour"          # scans per authenticated Pro user
     UPSTASH_REDIS_URL: Optional[str] = None   # if set, use Redis for distributed RL
 
+    # --- Sentry (D-060: error tracking) ---
+    SENTRY_DSN: Optional[str] = None  # Set to enable automatic error reporting
+
     # --- Scan tunables ---
     SCAN_CONCURRENCY: int = Field(default=3, ge=1, le=20)
     MAX_REPO_SIZE_MB: int = Field(default=500, ge=1)
