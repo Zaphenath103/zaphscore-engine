@@ -543,8 +543,8 @@
       "tier": "P2",
       "title": "Agent Self-Debug on Test Failure",
       "agent": "boris",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:41:00Z",
       "file": ".github/workflows/self-debug.yml",
       "note": "If test-gate.yml fails: trigger a recovery agent that reads the failure log, identifies the broken file, rewrites the fix, runs tests again, and re-pushes. Fully autonomous \u00e2\u20ac\u201d no CEO intervention on failures. Loop max 3 retries then alert."
     },

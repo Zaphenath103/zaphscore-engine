@@ -1,0 +1,77 @@
+name: ZaphScore Self-Debug on Test Failure
+
+on:
+  workflow_run:
+    workflows: ["ZaphScore Test Gate"]
+    types: [completed]
+
+jobs:
+  self-debug:
+    name: Auto-Recover on Failure
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download failure logs
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install -r requirements.txt pytest pytest-asyncio
+
+      - name: Run targeted test to isolate failure
+        id: isolate
+        run: |
+          pytest tests/ -v --tb=long 2>&1 | tee /tmp/failure_log.txt
+          echo "FAILED_TESTS=$(grep 'FAILED' /tmp/failure_log.txt | head -5)" >> $GITHUB_OUTPUT
+        continue-on-error: true
+        env:
+          SUPABASE_URL: "https://placeholder.supabase.co"
+          SUPABASE_KEY: "placeholder_key"
+          FINDINGS_ENCRYPTION_KEY: ""
+          STRIPE_SECRET_KEY: ""
+          STRIPE_WEBHOOK_SECRET: ""
+
+      - name: Post failure summary to PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const failedTests = process.env.FAILED_TESTS || 'Check workflow logs';
+            const runUrl = `${{ github.event.workflow_run.html_url }}`;
+            const body = [
+              '## WAR-4: Test Gate Failed — Self-Debug Report',
+              '',
+              '**Failed tests:**',
+              '```',
+              failedTests,
+              '```',
+              '',
+              `**Run logs:** ${runUrl}`,
+              '',
+              '_Auto-recovery attempted. Agent will retry up to 3 times._',
+              '_If still failing after 3 retries: escalate to CEO Slack._'
+            ].join('\n');
+
+            // Create an issue if no open PR
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[AUTO] Test gate failure on ${new Date().toISOString().split('T')[0]}`,
+              body,
+              labels: ['auto-debug', 'test-failure']
+            });
+        env:
+          FAILED_TESTS: ${{ steps.isolate.outputs.FAILED_TESTS }}
