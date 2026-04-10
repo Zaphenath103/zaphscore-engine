@@ -3,8 +3,8 @@
     "title": "Dispatch-50 — Tonight's War List vs Snyk",
     "date": "2026-04-09",
     "version": "0.2.0",
-    "last_updated": "2026-04-10T14:00:00Z",
-    "total": 50,
+    "last_updated": "2026-04-10T16:30:00Z",
+    "total": 56,
     "auto_refresh_seconds": 30
   },
   "items": [
@@ -57,6 +57,12 @@
     {"id":"D-047","tier":"P5","title":"CEO Name Consistency","agent":"dario","status":"done","fixed_at":"2026-04-09T22:00:00Z","file":"dispatch-board-50.html","note":"All 'Dario Amodei' references replaced with 'Mario Martinez'. Verified clean."},
     {"id":"D-048","tier":"P5","title":"Changelog / Release Notes","agent":"elena","status":"pending","fixed_at":null,"file":"zaphscore-landing/changelog.html","note":"No changelog. Users don't know what improved. Snyk publishes release notes. We need this."},
     {"id":"D-049","tier":"P5","title":"Status Page","agent":"elena","status":"pending","fixed_at":null,"file":"status.zaphscore.zaphenath.app","note":"No status page. When API is down users have no info. Blocks enterprise trust."},
-    {"id":"D-050","tier":"P5","title":"Copy Bible Deployment","agent":"elena","status":"pending","fixed_at":null,"file":"zaphscore-landing/","note":"ZaphLabs Copy Bible rules not applied to live pages. Elena to audit and rewrite all page copy."}
+    {"id":"D-050","tier":"P5","title":"Copy Bible Deployment","agent":"elena","status":"pending","fixed_at":null,"file":"zaphscore-landing/","note":"ZaphLabs Copy Bible rules not applied to live pages. Elena to audit and rewrite all page copy."},
+    {"id":"D-051","tier":"P0","title":"Secret Injection — Move PAT Out of Prompt","agent":"boris","status":"pending","fixed_at":null,"file":".github/workflows/","note":"GitHub PAT currently stored in plain text in scheduled task prompts. Move to GitHub Actions secret ZAPHLABS_PAT. All 4 war room agents must read from $ZAPHLABS_PAT env var injected at runtime, never hardcoded in prompt files."},
+    {"id":"D-052","tier":"P1","title":"GitHub Webhook → Agent Trigger on Push","agent":"dario","status":"pending","fixed_at":null,"file":".github/workflows/agent-trigger.yml","note":"Create GitHub Actions workflow: on push to main → trigger the appropriate war room agent via claude.ai RemoteTrigger API or webhook. Every PR/push wakes the relevant agent automatically. No manual Run Now clicks ever again."},
+    {"id":"D-053","tier":"P1","title":"Test Gate — Block Bad Commits Before Merge","agent":"andrej","status":"pending","fixed_at":null,"file":".github/workflows/test-gate.yml","note":"Create CI workflow: on every push → run pytest tests/ → if any test fails, block the merge and flag for agent self-debug. Currently agents push directly to main with no test gate. One bad commit can break production."},
+    {"id":"D-054","tier":"P2","title":"Agent Self-Debug on Test Failure","agent":"boris","status":"pending","fixed_at":null,"file":".github/workflows/self-debug.yml","note":"If test-gate.yml fails: trigger a recovery agent that reads the failure log, identifies the broken file, rewrites the fix, runs tests again, and re-pushes. Fully autonomous — no CEO intervention on failures. Loop max 3 retries then alert."},
+    {"id":"D-055","tier":"P2","title":"Move All State to Supabase (Real DB)","agent":"thariq","status":"pending","fixed_at":null,"file":"app/models/database.py","note":"dispatch-status.json is a flat file — concurrent agent writes cause race conditions. Move all dispatch state into Supabase table: dispatch_items(id, tier, title, agent, status, fixed_at, note, file, war_room). All 4 agents read/write via REST API. Atomic updates, no conflicts."},
+    {"id":"D-056","tier":"P3","title":"CEO Slack Notification on Shift Complete","agent":"dario","status":"pending","fixed_at":null,"file":"scripts/notify_ceo.py","note":"After each war room shift completes: POST to CEO Slack channel via webhook. Message format: WAR-X shift complete. Fixed: N items. Added: N new. Remaining: N. Completion: X%. Commit: {sha}. CEO wakes up to a summary, never needs to check boards manually."}
   ]
 }
