@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — ZaphScore</title>
+<meta name="description" content="ZaphScore Privacy Policy. GDPR compliant. Last updated April 2026.">
+<style>
+  :root { --bg: #0a0a0f; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; line-height: 1.7; }
+  .container { max-width: 760px; margin: 0 auto; padding: 80px 24px; }
+  .logo { font-size: 1.25rem; font-weight: 700; color: var(--accent); text-decoration: none; display: inline-block; margin-bottom: 40px; }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+  .meta { color: var(--muted); font-size: 0.875rem; margin-bottom: 48px; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin: 40px 0 12px; }
+  p, li { color: #94a3b8; margin-bottom: 12px; }
+  ul { padding-left: 24px; margin-bottom: 16px; }
+  a { color: var(--accent); }
+  .badge { display: inline-block; background: #1a2e1a; border: 1px solid #2d4a2d; color: #4ade80; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-bottom: 32px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="logo">ZaphScore</a>
+  <div class="badge">GDPR Article 17 Compliant</div>
+  <h1>Privacy Policy</h1>
+  <p class="meta">Last updated: April 10, 2026</p>
+  <h2>What We Collect</h2>
+  <ul>
+    <li><strong>Account data:</strong> Email, auth tokens (stored by Supabase)</li>
+    <li><strong>Scan data:</strong> Repository URLs, scan results, scores</li>
+    <li><strong>Usage data:</strong> Timestamps, API logs (90-day retention)</li>
+    <li><strong>Payment data:</strong> Processed by Stripe — we never see card numbers</li>
+  </ul>
+  <h2>How We Use Your Data</h2>
+  <ul>
+    <li>Deliver scan results to your account</li>
+    <li>Improve scoring using anonymized aggregate patterns</li>
+    <li>Process billing via Stripe</li>
+  </ul>
+  <h2>Encryption at Rest</h2>
+  <p>All scan findings are encrypted using Fernet AES-128-CBC before storage. Keys are stored separately from data.</p>
+  <h2>Data Retention</h2>
+  <ul>
+    <li>Scan results: retained while account is active</li>
+    <li>API logs: 90 days</li>
+    <li>Billing records: 7 years (legal requirement)</li>
+    <li>Deleted accounts: all data purged within 30 days</li>
+  </ul>
+  <h2>Your Rights (GDPR)</h2>
+  <ul>
+    <li><strong>Access:</strong> Request all data we hold on you</li>
+    <li><strong>Delete:</strong> Permanent deletion via DELETE /api/user/me — cascades to all scans</li>
+    <li><strong>Portability:</strong> Export scan history as JSON</li>
+    <li><strong>Object:</strong> Opt out of aggregate analytics</li>
+  </ul>
+  <h2>Third Parties</h2>
+  <ul>
+    <li>Supabase — auth and database</li>
+    <li>Stripe — payments</li>
+    <li>Vercel / Railway — hosting</li>
+  </ul>
+  <p>We do not sell data. We do not share individual scan results with any third party.</p>
+  <h2>Silent Scanning</h2>
+  <p>ZaphScore may scan public repos for aggregate metrics. Opt out by adding <code>zaphscore: opt-out</code> to your README.</p>
+  <h2>Contact</h2>
+  <p>Privacy requests: <a href="mailto:privacy@zaphenath.app">privacy@zaphenath.app</a></p>
+</div>
+</body>
+</html>

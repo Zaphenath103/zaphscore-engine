@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — ZaphScore</title>
+<meta name="description" content="ZaphScore pricing. Free, Pro, and Enterprise plans for AI agent security scoring.">
+<style>
+  :root { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; --accent-glow: rgba(99,102,241,0.15); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  header { padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 24px; font-size: 0.9rem; }
+  nav a:hover { color: var(--text); }
+  .hero { text-align: center; padding: 80px 24px 60px; }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; margin-bottom: 16px; }
+  .hero p { color: var(--muted); font-size: 1.1rem; max-width: 480px; margin: 0 auto; }
+  .toggle { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 40px 0; }
+  .toggle label { color: var(--muted); font-size: 0.9rem; cursor: pointer; }
+  .toggle input { display: none; }
+  .toggle-switch { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; }
+  .toggle-switch::after { content: ''; width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: left 0.2s; }
+  .save-badge { background: #1a3a1a; color: #4ade80; border: 1px solid #2d5a2d; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+  .plan { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 36px; position: relative; }
+  .plan.featured { border-color: var(--accent); box-shadow: 0 0 40px var(--accent-glow); }
+  .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-size: 0.75rem; font-weight: 700; padding: 4px 16px; border-radius: 20px; white-space: nowrap; }
+  .plan-name { font-size: 0.875rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .plan-price { font-size: 3rem; font-weight: 800; margin-bottom: 4px; }
+  .plan-price span { font-size: 1rem; font-weight: 400; color: var(--muted); }
+  .plan-desc { color: var(--muted); font-size: 0.875rem; margin-bottom: 32px; }
+  .btn { display: block; text-align: center; padding: 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; text-decoration: none; cursor: pointer; border: none; margin-bottom: 32px; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .features { list-style: none; }
+  .features li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 0.875rem; color: #cbd5e1; }
+  .features li::before { content: '✓'; color: #4ade80; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .features li.no::before { content: '–'; color: var(--muted); }
+  .faq { max-width: 700px; margin: 0 auto; padding: 0 24px 80px; }
+  .faq h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; text-align: center; }
+  .faq-item { border-top: 1px solid var(--border); padding: 24px 0; }
+  .faq-item h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; }
+  .faq-item p { color: var(--muted); font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">ZaphScore</a>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/docs">API Docs</a>
+    <a href="/status">Status</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <h1>Simple, transparent pricing</h1>
+  <p>Start free. Scale when you're ready. No hidden fees, no scan limits on Pro.</p>
+</div>
+
+<div class="plans">
+  <div class="plan">
+    <div class="plan-name">Free</div>
+    <div class="plan-price">$0<span>/month</span></div>
+    <div class="plan-desc">3 scans to see the score. No card required.</div>
+    <a href="/signup" class="btn btn-outline">Start for free</a>
+    <ul class="features">
+      <li>3 repository scans</li>
+      <li>7-dimension security score</li>
+      <li>Top 3 critical findings</li>
+      <li>ZaphScore badge for README</li>
+      <li class="no">Full findings list</li>
+      <li class="no">PDF export</li>
+      <li class="no">API access</li>
+      <li class="no">Breach probability</li>
+    </ul>
+  </div>
+
+  <div class="plan featured">
+    <div class="plan-badge">Most Popular</div>
+    <div class="plan-name">Pro</div>
+    <div class="plan-price">$99<span>/month</span></div>
+    <div class="plan-desc">Unlimited scans, full findings, PDF reports.</div>
+    <a href="/upgrade" class="btn btn-primary">Start Pro — $99/mo</a>
+    <ul class="features">
+      <li>Unlimited scans</li>
+      <li>Full 7-dimension breakdown</li>
+      <li>Complete findings list (all severities)</li>
+      <li>PDF executive reports</li>
+      <li>Breach probability per finding</li>
+      <li>Attack path analysis</li>
+      <li>API access (1,000 req/day)</li>
+      <li>Webhook notifications</li>
+      <li>ZaphScore badge + trend chart</li>
+      <li>Priority support (24h SLA)</li>
+    </ul>
+  </div>
+
+  <div class="plan">
+    <div class="plan-name">Enterprise</div>
+    <div class="plan-price">$999<span>/month</span></div>
+    <div class="plan-desc">Bulk scanning, white-label reports, SLA.</div>
+    <a href="mailto:sales@zaphenath.app" class="btn btn-outline">Contact sales</a>
+    <ul class="features">
+      <li>Everything in Pro</li>
+      <li>Bulk repo scanning (500+/day)</li>
+      <li>White-label PDF reports</li>
+      <li>Custom scoring weights</li>
+      <li>Dedicated API (unlimited)</li>
+      <li>SIEM/webhook integration</li>
+      <li>99.9% uptime SLA</li>
+      <li>Dedicated account manager</li>
+      <li>Custom data retention policy</li>
+      <li>Audit log export</li>
+    </ul>
+  </div>
+</div>
+
+<div class="faq">
+  <h2>Common questions</h2>
+  <div class="faq-item">
+    <h3>What counts as a scan?</h3>
+    <p>Each unique repository URL submission counts as one scan. Re-scanning the same repo after a fix is a new scan. Pro users have unlimited re-scans.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Can I scan private repositories?</h3>
+    <p>Yes — provide a GitHub access token at scan time. We use it only for that scan and never store it.</p>
+  </div>
+  <div class="faq-item">
+    <h3>How accurate is the score?</h3>
+    <p>Scores are based on 7 weighted dimensions analyzed via static analysis, dependency databases (NVD, OSV), and pattern matching. Calibrated against 200+ real repos. Not a penetration test — treat it as a continuous baseline.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Is my code stored?</h3>
+    <p>We clone the repo temporarily to run the scan, then delete the clone. Findings are encrypted at rest (AES-128-CBC). We never permanently store your source code.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Can I cancel anytime?</h3>
+    <p>Yes. Cancel from your dashboard and your plan stays active until the billing period ends. No cancellation fees.</p>
+  </div>
+</div>
+</body>
+</html>

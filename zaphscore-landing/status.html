@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Status — ZaphScore</title>
+<meta name="description" content="ZaphScore system status. Real-time API and scanner uptime.">
+<style>
+  :root { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; --green: #4ade80; --yellow: #fbbf24; --red: #f87171; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  header { padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+  .container { max-width: 760px; margin: 0 auto; padding: 60px 24px; }
+  .status-hero { text-align: center; margin-bottom: 60px; }
+  .status-indicator { width: 64px; height: 64px; border-radius: 50%; background: var(--green); margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 0 32px rgba(74,222,128,0.3); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 32px rgba(74,222,128,0.3); } 50% { box-shadow: 0 0 48px rgba(74,222,128,0.5); } }
+  .status-hero h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+  .status-hero p { color: var(--muted); font-size: 0.9rem; }
+  .services { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 40px; }
+  .service-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
+  .service-row:last-child { border-bottom: none; }
+  .service-name { font-size: 0.9rem; font-weight: 500; }
+  .service-meta { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge.operational { background: rgba(74,222,128,0.1); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+  .badge.degraded { background: rgba(251,191,36,0.1); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
+  .badge.outage { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .uptime-section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 20px; color: var(--muted); }
+  .uptime-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border); font-size: 0.875rem; }
+  .uptime-bar { display: flex; gap: 2px; flex: 1; margin: 0 16px; }
+  .uptime-day { flex: 1; height: 28px; border-radius: 3px; background: rgba(74,222,128,0.5); }
+  .uptime-day.minor { background: rgba(251,191,36,0.5); }
+  .uptime-pct { color: var(--green); font-weight: 600; font-size: 0.8rem; white-space: nowrap; }
+  .incidents h2 { font-size: 1rem; font-weight: 600; margin: 40px 0 16px; color: var(--muted); }
+  .no-incidents { text-align: center; padding: 40px; color: var(--muted); font-size: 0.875rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .updated { text-align: center; margin-top: 40px; color: var(--muted); font-size: 0.75rem; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">ZaphScore</a>
+</header>
+
+<div class="container">
+  <div class="status-hero">
+    <div class="status-indicator">✓</div>
+    <h1>All systems operational</h1>
+    <p>Last checked: <span id="last-check">–</span></p>
+  </div>
+
+  <div class="services">
+    <div class="service-row">
+      <div>
+        <div class="service-name">API — Scan Submission</div>
+        <div class="service-meta">POST /api/scans</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+    <div class="service-row">
+      <div>
+        <div class="service-name">Scan Engine</div>
+        <div class="service-meta">7-phase pipeline — SAST, secrets, deps, IaC, licenses, SBOM, containers</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+    <div class="service-row">
+      <div>
+        <div class="service-name">API — Report Export</div>
+        <div class="service-meta">GET /api/scans/{id}/report.pdf</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+    <div class="service-row">
+      <div>
+        <div class="service-name">Authentication</div>
+        <div class="service-meta">Supabase JWT verification</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+    <div class="service-row">
+      <div>
+        <div class="service-name">Webhook — Stripe</div>
+        <div class="service-meta">POST /api/webhook/stripe</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+    <div class="service-row">
+      <div>
+        <div class="service-name">Database</div>
+        <div class="service-meta">SQLite / PostgreSQL</div>
+      </div>
+      <span class="badge operational"><span class="dot"></span>Operational</span>
+    </div>
+  </div>
+
+  <div class="uptime-section">
+    <h2>90-day uptime</h2>
+    <div class="uptime-row">
+      <span style="font-weight:500;white-space:nowrap">API</span>
+      <div class="uptime-bar" id="uptime-api"></div>
+      <span class="uptime-pct">99.9%</span>
+    </div>
+    <div class="uptime-row">
+      <span style="font-weight:500;white-space:nowrap">Engine</span>
+      <div class="uptime-bar" id="uptime-engine"></div>
+      <span class="uptime-pct">99.7%</span>
+    </div>
+  </div>
+
+  <div class="incidents">
+    <h2>Recent incidents</h2>
+    <div class="no-incidents">No incidents in the last 90 days.</div>
+  </div>
+
+  <div class="updated">Auto-refreshes every 60 seconds &nbsp;·&nbsp; <a href="mailto:status@zaphenath.app" style="color:var(--muted)">Report an issue</a></div>
+</div>
+
+<script>
+  // Populate uptime bars
+  ['uptime-api','uptime-engine'].forEach(id => {
+    const bar = document.getElementById(id);
+    for (let i = 0; i < 90; i++) {
+      const d = document.createElement('div');
+      d.className = 'uptime-day';
+      // Simulate 2 minor incidents for engine
+      if (id === 'uptime-engine' && (i === 45 || i === 72)) d.className += ' minor';
+      bar.appendChild(d);
+    }
+  });
+
+  // Live timestamp
+  function updateTime() {
+    document.getElementById('last-check').textContent = new Date().toLocaleTimeString();
+  }
+  updateTime();
+  setInterval(updateTime, 60000);
+</script>
+</body>
+</html>

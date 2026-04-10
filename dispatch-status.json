@@ -393,8 +393,8 @@
       "tier": "P4",
       "title": "Empty State Copy",
       "agent": "elena",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:49:04Z",
       "file": "zaphscore-landing/",
       "note": "Empty states say generic text. Should drive action. Elena owns all copy rewrites."
     },
@@ -503,8 +503,8 @@
       "tier": "P5",
       "title": "Copy Bible Deployment",
       "agent": "elena",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:49:04Z",
       "file": "zaphscore-landing/",
       "note": "ZaphLabs Copy Bible rules not applied to live pages. Elena to audit and rewrite all page copy."
     },
