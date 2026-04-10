@@ -2058,47 +2058,52 @@
     {
       "id": "D-828",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: no supply chain category weight -- supply chain risk folded into dependency score incorrectly",
-      "note": "_WEIGHTS in scorer.py has 5 categories (dependency 35%, sast 25%, secrets 25%, iac 10%, license 5%). Supply chain findings are absent as a distinct category; a repo with zero CVEs but 5 malicious packages scores 100 on dependency, which is mathematically wrong."
+      "note": "_WEIGHTS in scorer.py has 5 categories (dependency 35%, sast 25%, secrets 25%, iac 10%, license 5%). Supply chain findings are absent as a distinct category; a repo with zero CVEs but 5 malicious packages scores 100 on dependency, which is mathematically wrong.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-829",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: CI/CD bonus additive after weighted average can inflate score above calibrated baseline",
-      "note": "calculate_score() adds +5 for CI/CD config and +3 for SECURITY.md after computing the weighted average. A repo with a critical vuln scoring 87/100 gets bumped to 95 just by having a .github/workflows file; this is not calibrated against industry benchmarks and rewards presence of files not absence of risk."
+      "note": "calculate_score() adds +5 for CI/CD config and +3 for SECURITY.md after computing the weighted average. A repo with a critical vuln scoring 87/100 gets bumped to 95 just by having a .github/workflows file; this is not calibrated against industry benchmarks and rewards presence of files not absence of risk.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-830",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: floor of 1 per category before weighted average distorts worst-case scoring -- bonus exploitable",
-      "note": "category_scores[cat] = max(1, ...) floors every category at 1 before the weighted average. The code then adds bonus points (up to +8) meaning a catastrophically insecure repo with CI/CD can score 9/100 instead of 1/100; the floor is applied at the wrong stage distorting the penalty regime."
+      "note": "category_scores[cat] = max(1, ...) floors every category at 1 before the weighted average. The code then adds bonus points (up to +8) meaning a catastrophically insecure repo with CI/CD can score 9/100 instead of 1/100; the floor is applied at the wrong stage distorting the penalty regime.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-831",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: secret deduction (20 for critical) is disproportionate vs Snyk/Semgrep priority weighting",
-      "note": "_DEDUCTIONS maps FindingType.secret.critical to 20 and FindingType.vulnerability.critical to 15. A single critical secret deducts the entire secrets category; Snyk and Semgrep weight secrets lower than critical vulns in their priority score formula. The 20-point value is empirically uncalibrated."
+      "note": "_DEDUCTIONS maps FindingType.secret.critical to 20 and FindingType.vulnerability.critical to 15. A single critical secret deducts the entire secrets category; Snyk and Semgrep weight secrets lower than critical vulns in their priority score formula. The 20-point value is empirically uncalibrated.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-832",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: diminishing returns formula creates a gameable soft floor exploitable by finding splitting",
-      "note": "The diminishing returns formula factor = 1.0 / (1.0 + count * 0.5) means the 100th critical finding of the same type costs only ~0.02 of the base deduction. An adversary can game the score by splitting a single large vulnerability into many sub-findings of the same severity, exploiting the per-(category, severity) counter key."
+      "note": "The diminishing returns formula factor = 1.0 / (1.0 + count * 0.5) means the 100th critical finding of the same type costs only ~0.02 of the base deduction. An adversary can game the score by splitting a single large vulnerability into many sub-findings of the same severity, exploiting the per-(category, severity) counter key.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-833",
@@ -2121,11 +2126,12 @@
     {
       "id": "D-835",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: license weight (5%) too low for enterprise deals -- calibrated benchmark is 15-20%",
-      "note": "_WEIGHTS assigns license only 5% weight. Enterprise legal teams use license risk as a primary procurement blocker (GPL in a commercial product is a deal-killer). Calibrating against real enterprise procurement data, license risk should be 15-20% weight; the current 5% systematically underscores license risk."
+      "note": "_WEIGHTS assigns license only 5% weight. Enterprise legal teams use license risk as a primary procurement blocker (GPL in a commercial product is a deal-killer). Calibrating against real enterprise procurement data, license risk should be 15-20% weight; the current 5% systematically underscores license risk.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-836",
@@ -2139,11 +2145,12 @@
     {
       "id": "D-837",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/scorer.py",
       "title": "Scorer: integer category scores lose floating-point precision before aggregation causing 1-3 point error",
-      "note": "category_scores dict stores int values (starting at 100, deducting integers). The weighted sum is computed on integers; rounding errors compound when multiple categories near their floor values. Snyk uses floating-point category scores throughout; our integer truncation can produce scores 1-3 points off the correct float result."
+      "note": "category_scores dict stores int values (starting at 100, deducting integers). The weighted sum is computed on integers; rounding errors compound when multiple categories near their floor values. Snyk uses floating-point category scores throughout; our integer truncation can produce scores 1-3 points off the correct float result.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-838",
