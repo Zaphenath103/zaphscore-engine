@@ -659,6 +659,76 @@
       "fixed_at": null,
       "file": "app/api/scans.py",
       "note": "Add GET /api/admin/queue \u2014 auth-gated to admin JWT claim. Returns {pending: N, running: N, done_today: N, avg_duration_s: N, oldest_pending_age_s: N}. Lets the factory know if worker is backed up without reading DB directly."
+    },
+    {
+      "id": "D-066",
+      "title": "GET /api/scans and GET /api/scans/{id} missing auth gate",
+      "description": "list_scans() and get_scan() have no CurrentUser dependency \u2014 any unauthenticated caller can enumerate all scan results and read findings.",
+      "file": "app/api/scans.py",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787103+00:00"
+    },
+    {
+      "id": "D-067",
+      "title": "Stripe webhook runs without signature verification when env var missing",
+      "description": "When STRIPE_WEBHOOK_SECRET is not set, webhook skips signature verification but still processes events \u2014 any attacker can POST fake checkout.session.completed to grant free Pro access.",
+      "file": "app/api/webhook.py",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787144+00:00"
+    },
+    {
+      "id": "D-068",
+      "title": "JWT auth silently degrades to no-op when SUPABASE_JWT_SECRET is missing",
+      "description": "deps.py decodes JWT without signature verification when SUPABASE_JWT_SECRET is unset \u2014 forged tokens accepted in production if env var is missing.",
+      "file": "app/api/deps.py",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787151+00:00"
+    },
+    {
+      "id": "D-069",
+      "title": "Missing HSTS header in SecurityHeadersMiddleware",
+      "description": "Strict-Transport-Security header not set \u2014 browsers will not enforce HTTPS, enabling downgrade attacks on production.",
+      "file": "app/middleware/security_headers.py",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787155+00:00"
+    },
+    {
+      "id": "D-070",
+      "title": "Dockerfile runs as root \u2014 no non-root user defined",
+      "description": "Container runs as root. If application is compromised, attacker gets full container root access. Add dedicated non-root user.",
+      "file": "Dockerfile",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787159+00:00"
+    },
+    {
+      "id": "D-071",
+      "title": "cryptography package pinned to 42.0.8 \u2014 CVEs fixed in 44+",
+      "description": "cryptography==42.0.8 has known vulnerabilities (CVE-2024-26130). Should be upgraded to >=44.0.0.",
+      "file": "requirements.txt",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787162+00:00"
+    },
+    {
+      "id": "D-072",
+      "title": "Rate limiter trusts X-Forwarded-For without validation \u2014 IP spoofing risk",
+      "description": "middleware/rate_limit.py trusts X-Forwarded-For header directly. Attacker sets arbitrary IPs to bypass per-IP rate limits.",
+      "file": "app/middleware/rate_limit.py",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "pending",
+      "created_at": "2026-04-10T07:33:21.787166+00:00"
     }
   ]
 }

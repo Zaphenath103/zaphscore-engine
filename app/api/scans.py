@@ -113,8 +113,12 @@ async def submit_scan(
 # ---------------------------------------------------------------------------
 
 @router.get("/{scan_id}", response_model=ScanResult)
-async def get_scan(scan_id: uuid.UUID) -> ScanResult:
-    """Return the full scan record, including findings if the scan is complete."""
+async def get_scan(scan_id: uuid.UUID, current_user: CurrentUser) -> ScanResult:
+    """Return the full scan record, including findings if the scan is complete.
+
+    D-066: Requires authentication — scan results contain security findings
+    that must not be exposed to unauthenticated callers.
+    """
     row = await db.get_scan(scan_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -168,8 +172,12 @@ async def get_scan(scan_id: uuid.UUID) -> ScanResult:
 # ---------------------------------------------------------------------------
 
 @router.get("/{scan_id}/stream")
-async def stream_scan_progress(scan_id: uuid.UUID, request: Request):
+async def stream_scan_progress(scan_id: uuid.UUID, request: Request, current_user: CurrentUser):
     """Server-Sent Events endpoint that streams scan progress in real time.
+
+    D-066: Requires authentication — progress stream reveals repo structure and
+    vulnerability details during active scans.
+
 
     The client connects once and receives JSON events like:
         data: {"phase": "cloning", "progress_pct": 10, "message": "Cloning repo..."}
@@ -238,10 +246,15 @@ async def stream_scan_progress(scan_id: uuid.UUID, request: Request):
 
 @router.get("", response_model=PaginatedScans)
 async def list_scans(
+    current_user: CurrentUser,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
 ) -> PaginatedScans:
-    """Return a paginated list of scans, newest first."""
+    """Return a paginated list of scans, newest first.
+
+    D-066: Requires authentication — scan list reveals repo URLs and security scores
+    which must not be enumerable by unauthenticated callers.
+    """
     items_raw, total = await db.list_scans(page=page, per_page=per_page)
 
     items = []

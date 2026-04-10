@@ -1,5 +1,5 @@
 """
-D-001: Stripe Webhook Handler — the missing final mile between payment and Pro access.
+D-001 + D-067: Stripe Webhook Handler — the missing final mile between payment and Pro access.
 
 This endpoint receives Stripe event notifications and:
 1. Verifies the Stripe-Signature header (prevents spoofed webhook calls)
@@ -114,22 +114,42 @@ async def stripe_webhook(request: Request) -> JSONResponse:
     sig_header = request.headers.get("stripe-signature", "")
 
     # --- Verify signature ---
+    # D-067: In production (VERCEL or RAILWAY_ENVIRONMENT set), STRIPE_WEBHOOK_SECRET
+    # is REQUIRED. Missing secret = hard reject. This prevents attackers from posting
+    # fake checkout.session.completed events to grant themselves free Pro access.
+    _is_production = bool(
+        os.environ.get("VERCEL") or os.environ.get("RAILWAY_ENVIRONMENT")
+    )
+
     if stripe and webhook_secret:
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         except Exception as exc:
             logger.warning("Stripe signature verification failed: %s", exc)
-            raise HTTPException(status_code=400, detail=f"Invalid signature: {exc}")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+    elif _is_production:
+        # Hard fail in production — never process unverified webhooks
+        logger.critical(
+            "STRIPE_WEBHOOK_SECRET not set in production — rejecting webhook. "
+            "Set STRIPE_WEBHOOK_SECRET in Vercel/Railway environment variables immediately."
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Webhook processing is disabled: STRIPE_WEBHOOK_SECRET is not configured. "
+                "Contact the platform administrator."
+            ),
+        )
     else:
-        # Demo mode: no verification — log and accept (development only)
-        import json
+        # Development/local only: parse without verification, log a prominent warning
+        import json as _json
         try:
-            event = json.loads(payload)
+            event = _json.loads(payload)
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid JSON payload")
         logger.warning(
-            "STRIPE_WEBHOOK_SECRET not set — processing webhook WITHOUT verification. "
-            "This is UNSAFE in production. Set STRIPE_WEBHOOK_SECRET in Vercel env vars."
+            "DEV MODE: STRIPE_WEBHOOK_SECRET not set — processing webhook WITHOUT "
+            "signature verification. NEVER deploy without this secret."
         )
 
     event_type = event.get("type", "") if isinstance(event, dict) else event.type

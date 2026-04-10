@@ -148,12 +148,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         limit = _PRO_LIMIT if is_authenticated else _FREE_LIMIT
         window = _PRO_WINDOW if is_authenticated else _FREE_WINDOW
 
-        # Build rate limit key
-        client_ip = (
-            request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-            or request.headers.get("X-Real-IP", "")
-            or (request.client.host if request.client else "unknown")
-        )
+        # D-072: Build rate limit key using a hardened IP resolution strategy.
+        # X-Forwarded-For can be spoofed by clients — use the RIGHTMOST IP added
+        # by our trusted proxy/CDN (Vercel/Railway), NOT the leftmost (client-supplied).
+        # On Railway/Vercel, the infrastructure appends the real client IP last,
+        # so we trust the last hop in X-Forwarded-For. If no proxy header exists,
+        # fall back to the direct TCP connection address.
+        x_forwarded_for = request.headers.get("X-Forwarded-For", "").strip()
+        x_real_ip = request.headers.get("X-Real-IP", "").strip()
+        direct_ip = request.client.host if request.client else "unknown"
+
+        if x_forwarded_for:
+            # Use the last (rightmost) IP — added by our trusted proxy, not spoofable
+            hops = [h.strip() for h in x_forwarded_for.split(",") if h.strip()]
+            client_ip = hops[-1] if hops else direct_ip
+        elif x_real_ip:
+            client_ip = x_real_ip
+        else:
+            client_ip = direct_ip
+
         key = f"rl:{client_ip}:{window}"
 
         # Check rate limit (Redis preferred, in-memory fallback)

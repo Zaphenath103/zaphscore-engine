@@ -53,6 +53,20 @@ COPY . .
 # Fix Windows line endings + make executable
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
+# ---- D-070: Non-root user — principle of least privilege --------------------
+# Running as root means a compromised container = root on the host's namespace.
+# Create a dedicated app user with minimal permissions.
+RUN groupadd --gid 1001 appgroup \
+    && useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser \
+    # Grant appuser ownership of the app directory and tmp scan workspace
+    && chown -R appuser:appgroup /app \
+    && mkdir -p /tmp/zse-scans \
+    && chown -R appuser:appgroup /tmp/zse-scans \
+    # Allow appuser to write to /tmp (needed for git clone and tarball extraction)
+    && chmod 1777 /tmp
+
+USER appuser
+
 # ---- Runtime ----------------------------------------------------------------
 # D-031: HEALTHCHECK — allows container orchestrators (Docker, Railway, k8s)
 # to detect unhealthy state and restart the container automatically.
