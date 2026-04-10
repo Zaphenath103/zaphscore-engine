@@ -278,3 +278,188 @@ async def scan_containers(repo_dir: str) -> list[Finding]:
 
     logger.info("Trivy found %d container findings in %s", len(findings), repo_dir)
     return findings
+
+
+# ---------------------------------------------------------------------------
+# D-678: Dockerfile base image recommendation engine
+# Closes the gap vs Snyk Container base-image upgrade suggestions.
+# ---------------------------------------------------------------------------
+
+from dataclasses import dataclass as _dataclass
+
+BASE_IMAGE_RECOMMENDATIONS: dict[str, tuple[str, str]] = {
+    "ubuntu:16.04":  ("ubuntu:22.04", "high"),
+    "ubuntu:18.04":  ("ubuntu:22.04", "high"),
+    "ubuntu:20.04":  ("ubuntu:24.04", "medium"),
+    "ubuntu:22.04":  ("ubuntu:24.04", "low"),
+    "debian:8":      ("debian:12-slim", "critical"),
+    "debian:9":      ("debian:12-slim", "high"),
+    "debian:10":     ("debian:12-slim", "medium"),
+    "debian:11":     ("debian:12-slim", "low"),
+    "debian:buster": ("debian:bookworm-slim", "medium"),
+    "debian:stretch": ("debian:bookworm-slim", "high"),
+    "python:3.6":    ("python:3.12-slim", "critical"),
+    "python:3.7":    ("python:3.12-slim", "critical"),
+    "python:3.8":    ("python:3.12-slim", "high"),
+    "python:3.9":    ("python:3.12-slim", "medium"),
+    "python:3.10":   ("python:3.12-slim", "low"),
+    "python:3.11":   ("python:3.12-slim", "low"),
+    "node:10":       ("node:20-slim", "critical"),
+    "node:12":       ("node:20-slim", "critical"),
+    "node:14":       ("node:20-slim", "high"),
+    "node:16":       ("node:20-slim", "medium"),
+    "node:18":       ("node:20-slim", "low"),
+    "alpine:3.10":   ("alpine:3.20", "high"),
+    "alpine:3.11":   ("alpine:3.20", "high"),
+    "alpine:3.12":   ("alpine:3.20", "medium"),
+    "alpine:3.14":   ("alpine:3.20", "low"),
+    "openjdk:8":     ("eclipse-temurin:21-jre-jammy", "critical"),
+    "openjdk:11":    ("eclipse-temurin:21-jre-jammy", "medium"),
+    "openjdk:17":    ("eclipse-temurin:21-jre-jammy", "low"),
+    "java:8":        ("eclipse-temurin:21-jre-jammy", "critical"),
+    "nginx:1.18":    ("nginx:stable-alpine", "medium"),
+    "nginx:1.20":    ("nginx:stable-alpine", "low"),
+    "redis:5":       ("redis:7-alpine", "medium"),
+    "redis:6":       ("redis:7-alpine", "low"),
+    "postgres:10":   ("postgres:16-alpine", "high"),
+    "postgres:12":   ("postgres:16-alpine", "medium"),
+    "postgres:14":   ("postgres:16-alpine", "low"),
+    "php:7.2":       ("php:8.3-fpm-alpine", "critical"),
+    "php:7.4":       ("php:8.3-fpm-alpine", "medium"),
+    "php:8.0":       ("php:8.3-fpm-alpine", "low"),
+    "ruby:2.6":      ("ruby:3.3-alpine", "critical"),
+    "ruby:2.7":      ("ruby:3.3-alpine", "medium"),
+    "golang:1.18":   ("golang:1.22-alpine", "medium"),
+    "golang:1.20":   ("golang:1.22-alpine", "low"),
+    "gcr.io/distroless/static:nonroot": ("gcr.io/distroless/static-debian12:nonroot", "low"),
+    "gcr.io/distroless/base:latest": ("gcr.io/distroless/base-debian12:nonroot", "low"),
+}
+
+
+@_dataclass
+class ContainerFinding:
+    """Result of a base-image recommendation check.
+
+    Attributes:
+        dockerfile_path: Relative path to the Dockerfile.
+        current_image: The FROM image string in the Dockerfile.
+        recommended_image: Suggested replacement image.
+        severity: "critical" | "high" | "medium" | "low".
+        reason: Human-readable explanation.
+    """
+    dockerfile_path: str
+    current_image: str
+    recommended_image: str
+    severity: str
+    reason: str
+
+
+def _extract_from_statements(dockerfile_content: str) -> list[str]:
+    """Extract all base images from a Dockerfile (multi-stage aware)."""
+    images: list[str] = []
+    for line in dockerfile_content.splitlines():
+        stripped = line.strip()
+        if stripped.upper().startswith("FROM "):
+            parts = stripped.split()
+            if len(parts) >= 2:
+                image_ref = parts[1]
+                if not image_ref.startswith("$"):
+                    images.append(image_ref)
+    return images
+
+
+def _normalise_image_ref(image_ref: str) -> str:
+    """Normalise an image ref for lookup (lowercase, strip digest)."""
+    if "@" in image_ref:
+        image_ref = image_ref.split("@")[0]
+    return image_ref.lower().strip()
+
+
+def scan_dockerfile(path: str) -> list[ContainerFinding]:
+    """Scan a single Dockerfile for outdated base images.
+
+    Args:
+        path: Absolute or relative path to the Dockerfile.
+
+    Returns:
+        List of ContainerFinding objects for each outdated base image.
+        Empty list if all images are current or not in the database.
+    """
+    findings: list[ContainerFinding] = []
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            dockerfile_content = fh.read()
+    except OSError as exc:
+        logger.warning("scan_dockerfile: cannot read %s: %s", path, exc)
+        return []
+    from_images = _extract_from_statements(dockerfile_content)
+    for image_ref in from_images:
+        normalised = _normalise_image_ref(image_ref)
+        rec = BASE_IMAGE_RECOMMENDATIONS.get(normalised)
+        if rec is None and ":" in normalised:
+            name, tag = normalised.split(":", 1)
+            for variant in ("-slim", "-alpine", "-buster", "-bullseye",
+                            "-bookworm", "-jammy", "-focal", "-bionic",
+                            "-fpm", "-jre", "-jdk"):
+                if tag.endswith(variant):
+                    tag = tag[: -len(variant)]
+                    break
+            rec = BASE_IMAGE_RECOMMENDATIONS.get(f"{name}:{tag}")
+        if rec is not None:
+            recommended_image, severity = rec
+            findings.append(ContainerFinding(
+                dockerfile_path=path,
+                current_image=image_ref,
+                recommended_image=recommended_image,
+                severity=severity,
+                reason=(
+                    f"Base image '{image_ref}' is outdated. "
+                    f"Upgrade to '{recommended_image}' for latest security patches."
+                ),
+            ))
+    return findings
+
+
+def scan_dockerfiles_in_repo(repo_dir: str) -> list[ContainerFinding]:
+    """Scan all Dockerfiles in a repository for outdated base images."""
+    import os as _os
+    all_findings: list[ContainerFinding] = []
+    skip_dirs = {"node_modules", ".git", "vendor", "__pycache__", "venv", ".venv"}
+    for dirpath, dirnames, filenames in _os.walk(repo_dir):
+        dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+        for fname in filenames:
+            if (fname.lower() in ("dockerfile", "containerfile")
+                    or fname.lower().endswith(".dockerfile")):
+                full_path = _os.path.join(dirpath, fname)
+                rel_path = _os.path.relpath(full_path, repo_dir)
+                item_findings = scan_dockerfile(full_path)
+                for f in item_findings:
+                    f.dockerfile_path = rel_path
+                all_findings.extend(item_findings)
+    logger.info("Dockerfile base-image scan: %d findings in %s", len(all_findings), repo_dir)
+    return all_findings
+
+
+def container_findings_to_zse(findings: list[ContainerFinding]) -> list[Finding]:
+    """Convert ContainerFinding objects to ZSE Finding objects."""
+    sev_map = {
+        "critical": Severity.critical,
+        "high": Severity.high,
+        "medium": Severity.medium,
+        "low": Severity.low,
+        "info": Severity.info,
+    }
+    results: list[Finding] = []
+    for cf in findings:
+        results.append(Finding(
+            type=FindingType.vulnerability,
+            severity=sev_map.get(cf.severity, Severity.low),
+            title=f"Outdated base image: {cf.current_image}",
+            description=(
+                f"{cf.reason}"
+                f"\nCurrent: `{cf.current_image}`"
+                f"\nRecommended: `{cf.recommended_image}`"
+            ),
+            file_path=cf.dockerfile_path or None,
+        ))
+    return results

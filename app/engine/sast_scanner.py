@@ -16,6 +16,47 @@ logger = logging.getLogger(__name__)
 
 SEMGREP_TIMEOUT = 300  # seconds
 
+# ---------------------------------------------------------------------------
+# D-677: Extended semgrep rulesets beyond --config auto
+# ---------------------------------------------------------------------------
+
+EXTENDED_SEMGREP_RULESETS: list[str] = [
+    "p/ci",
+    "p/security-audit",
+    "p/secrets",
+    "p/owasp-top-ten",
+    "p/python",
+    "p/javascript",
+    "p/typescript",
+    "p/java",
+    "p/golang",
+    "p/ruby",
+    "p/php",
+    "p/csharp",
+    "p/docker",
+    "p/terraform",
+    "p/kubernetes",
+    "p/sql-injection",
+    "p/xss",
+    "p/command-injection",
+    "p/insecure-transport",
+    "p/jwt",
+    "p/react",
+    "p/flask",
+    "p/django",
+    "p/expressjs",
+    "p/spring",
+]
+
+
+def get_semgrep_args(extended: bool = False) -> list[str]:
+    args: list[str] = ["--config", "auto"]
+    if extended:
+        for ruleset in EXTENDED_SEMGREP_RULESETS:
+            args += ["--config", ruleset]
+    return args
+
+
 # Semgrep severity → ZSE severity
 _SEVERITY_MAP: dict[str, Severity] = {
     "ERROR": Severity.high,
