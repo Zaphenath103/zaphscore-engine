@@ -2,9 +2,9 @@
   "meta": {
     "title": "Dispatch-50 â€” Tonight's War List vs Snyk",
     "date": "2026-04-09",
-    "version": "0.2.0",
-    "last_updated": "2026-04-10T07:45:14Z",
-    "total": 56,
+    "version": "0.6.0",
+    "last_updated": "2026-04-10T08:13:41Z",
+    "total": 265,
     "auto_refresh_seconds": 30
   },
   "items": [
@@ -659,6 +659,1806 @@
       "fixed_at": "2026-04-10T07:41:00Z",
       "file": "app/api/scans.py",
       "note": "WAR-1: app/api/admin.py — GET /api/admin/queue. _require_admin dep enforces admin JWT claim. Returns pending/running/done_today/failed_today/avg_duration_s/oldest_pending_age_s/total_scans. Registered in main.py."
+    },
+    {
+      "id": "D-673",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/license_scanner.py",
+      "title": "Snyk SPDX full-database license coverage vs our sparse ~20 SPDX ID list",
+      "note": "Snyk license scanning ingests the full SPDX 3.21 database (500+ identifiers). license_scanner.py hard-codes a sparse allow/deny list with no dynamic loading, causing enterprise legal teams to reject scans as incomplete."
+    },
+    {
+      "id": "D-674",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/license_scanner.py",
+      "title": "Snyk org-level license policy object missing from our engine",
+      "note": "Snyk lets orgs define a License Policy JSON mapping license families to severity. license_scanner.py has no policy loader; every org sees the same hard-coded severity mappings, blocking multi-tenant enterprise sale."
+    },
+    {
+      "id": "D-675",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk reachability analysis absent -- we flag every vuln regardless of call-graph reachability",
+      "note": "Snyk reachability uses static call-graph analysis to suppress findings where vulnerable code paths are never invoked. vuln_scanner.py emits findings for every matching OSV record with no reachability filter, causing massive false-positive rates."
+    },
+    {
+      "id": "D-676",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Snyk fix PRs auto-generated with passing CI -- we generate diffs but never open PRs autonomously",
+      "note": "Snyk Fix PR opens a GitHub PR before the developer sees the finding. fix_generator.py builds unified diffs and has a GitHub client but no autonomous trigger exists after scan completion."
+    },
+    {
+      "id": "D-677",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Snyk Code 1000+ proprietary SAST rules vs our single semgrep --config auto invocation",
+      "note": "Snyk Code maintains 1000+ internally-curated rules. sast_scanner.py calls semgrep with --config auto which pulls community rules with no quality gate; proprietary Snyk rules for Java deserialization and Python SSRF are absent."
+    },
+    {
+      "id": "D-678",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/container_scanner.py",
+      "title": "Snyk container base image recommendations absent from our scanner",
+      "note": "Snyk Container recommends switching from ubuntu:20.04 to distroless/static. container_scanner.py emits vuln findings but contains no base-image recommendation logic."
+    },
+    {
+      "id": "D-679",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/iac_scanner.py",
+      "title": "Snyk IaC drift detection absent -- we only scan static files not deployed state",
+      "note": "Snyk IaC+ compares Terraform plan output against deployed cloud state to detect drift. iac_scanner.py runs Checkov against static .tf files only; no plan-file ingestion, no Terraform state comparison."
+    },
+    {
+      "id": "D-680",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/iac_scanner.py",
+      "title": "Snyk policy-as-code OPA/Rego support absent -- we have no custom policy engine",
+      "note": "Snyk supports custom OPA Rego policies for IaC rules. iac_scanner.py is Checkov-only with no Rego loader; enterprises cannot express internal compliance rules."
+    },
+    {
+      "id": "D-681",
+      "tier": "P1",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk organization-level aggregate reporting missing -- we report per-scan only",
+      "note": "Snyk org dashboard aggregates findings across all repos with SLA breach alerts. reports.py generates per-scan PDFs; no org-level rollup query, no trend endpoint."
+    },
+    {
+      "id": "D-682",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk resolves transitive deps to depth N -- we cap at manifest-declared deps",
+      "note": "Snyk builds a full dependency graph including transitive dependencies 10+ levels deep. dependency_resolver.py resolves one level from lock files with no recursive transitive traversal beyond what the lock file provides."
+    },
+    {
+      "id": "D-683",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk runtime sensor for container monitoring absent -- we have no runtime layer",
+      "note": "Snyk Container runtime sensor reports on vulnerabilities in running containers via eBPF hooks. vuln_scanner.py is a static scan only; no runtime sensor, no running-process vulnerability correlation."
+    },
+    {
+      "id": "D-684",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Snyk Code inter-procedural dataflow across files absent -- Semgrep auto config is intra-procedural",
+      "note": "Snyk Code tracks taint across module boundaries. sast_scanner.py invokes Semgrep which without explicit taint rules performs intra-procedural analysis only; cross-file SQL injection chains are invisible."
+    },
+    {
+      "id": "D-685",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/scans.py",
+      "title": "Snyk IDE plugins with inline findings absent -- we have no IDE integration layer",
+      "note": "Snyk ships VS Code, JetBrains, and Eclipse plugins. app/api/scans.py exposes REST endpoints only; no Language Server Protocol adapter, no IDE plugin SDK."
+    },
+    {
+      "id": "D-686",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Snyk CI/CD native fail-fast threshold absent -- pipeline has no configurable severity gate",
+      "note": "Snyk CI lets teams set severity thresholds to fail on any HIGH. pipeline.py runs all phases and returns results; no configurable fail-fast threshold that a CI step can use to break the build."
+    },
+    {
+      "id": "D-687",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/secret_scanner.py",
+      "title": "Snyk Secrets validity checking absent -- we detect patterns but do not validate liveness",
+      "note": "Snyk Secrets probes detected credentials against provider APIs to confirm they are active. secret_scanner.py pattern-matches only; no liveness probe, causing false positives on rotated credentials."
+    },
+    {
+      "id": "D-688",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/license_scanner.py",
+      "title": "Snyk license compatibility matrix absent -- we do not check license interaction between deps",
+      "note": "Snyk warns when GPL-3.0 is used alongside MIT (compatibility conflict). license_scanner.py evaluates each package independently; no pairwise compatibility matrix, no copyleft-contamination graph."
+    },
+    {
+      "id": "D-689",
+      "tier": "P2",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk SBOM export in CycloneDX 1.5 -- our SBOM schema version is not parameterised",
+      "note": "Snyk exports CycloneDX 1.5 with vulnerabilities embedded. sbom_generator.py generates CycloneDX but the schema version is not parameterised; enterprises requiring 1.5 for NTIA compliance get a non-conformant output."
+    },
+    {
+      "id": "D-690",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk supports yarn.lock v2/v3 -- we only parse package-lock.json for npm",
+      "note": "Snyk resolves yarn.lock classic, berry, and pnp variants. dependency_resolver.py _MANIFEST_FILES dict has no yarn.lock entry; all Yarn workspaces are silently skipped."
+    },
+    {
+      "id": "D-691",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk supports pnpm-lock.yaml -- we have no pnpm resolver",
+      "note": "pnpm is now the default for many monorepos. dependency_resolver.py has no pnpm-lock.yaml parser; repos using pnpm get zero dependency scan coverage."
+    },
+    {
+      "id": "D-692",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk resolves Poetry.lock -- we parse pyproject.toml but miss Poetry resolved lockfile",
+      "note": "Poetry.lock contains pinned versions with hashes. dependency_resolver.py pyproject.toml parser extracts dependency declarations but does not read poetry.lock, producing unresolved version ranges that OSV cannot match."
+    },
+    {
+      "id": "D-693",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk supports .NET packages.lock.json -- we have no NuGet resolver",
+      "note": "Snyk resolves NuGet packages.lock.json and packages.config. dependency_resolver.py has no NuGet ecosystem entry; all .NET repos produce empty dependency lists."
+    },
+    {
+      "id": "D-694",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Snyk fix PRs include test results before opening -- we generate diffs without CI validation",
+      "note": "Snyk Fix PR waits for CI to pass on its test branch before presenting the PR. fix_generator.py opens PRs immediately with no CI gating step, risking broken fix PRs."
+    },
+    {
+      "id": "D-695",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/scans.py",
+      "title": "Snyk project monitoring with auto-rescan absent -- we require manual rescan triggers",
+      "note": "Snyk project monitor polls the repo daily and raises new findings automatically. scans.py exposes a trigger endpoint only; no cron/scheduler integration, no automatic rescan on new commit SHA."
+    },
+    {
+      "id": "D-696",
+      "tier": "P2",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk executive PDF with risk trend graphs -- our PDF is a flat findings list",
+      "note": "Snyk generates executive PDFs with score trend sparklines and SLA heatmaps. reports.py uses ReportLab to output a findings table; no chart generation, no trend visualisation."
+    },
+    {
+      "id": "D-697",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Snyk Code supports C/C++ -- Semgrep auto config has weak C/C++ coverage",
+      "note": "Snyk Code ships C/C++ rules for buffer overflows and use-after-free. sast_scanner.py relies on semgrep --config auto which has limited C/C++ community rules; embedded firmware repos get near-zero SAST coverage."
+    },
+    {
+      "id": "D-698",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/container_scanner.py",
+      "title": "Snyk scans container registries directly -- we require a Dockerfile in the repo",
+      "note": "Snyk Container pulls images from ECR, GCR, ACR, and Docker Hub by image reference. container_scanner.py runs Trivy against the repo filesystem only; no registry pull, no image-reference input."
+    },
+    {
+      "id": "D-699",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/webhook.py",
+      "title": "Snyk SCM webhooks rescan on push -- our webhook only handles Stripe events",
+      "note": "Snyk registers GitHub/GitLab webhooks to trigger rescans on every push. webhook.py is a Stripe payment webhook handler only; no SCM webhook listener, no push-triggered rescan flow."
+    },
+    {
+      "id": "D-700",
+      "tier": "P2",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk JIRA/Linear integration for finding tickets absent -- no issue tracker sync",
+      "note": "Snyk automatically opens JIRA tickets for new HIGH/CRITICAL findings. reports.py has no outbound webhook or ticket-creation client; finding triage stays entirely manual."
+    },
+    {
+      "id": "D-701",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sbom_generator.py",
+      "title": "Snyk SBOM includes license expressions per component -- ours omits license in SBOM output",
+      "note": "Snyk CycloneDX SBOM embeds the SPDX license expression on every component element. sbom_generator.py builds component nodes without a licenses element, making the SBOM non-conformant with NTIA SBOM minimum elements."
+    },
+    {
+      "id": "D-702",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk handles monorepo workspace configs -- we treat each manifest independently",
+      "note": "Snyk detects npm/yarn/pnpm workspaces and deduplicates shared dependencies. dependency_resolver.py processes each manifest in isolation, emitting duplicate findings for shared transitive deps in monorepos."
+    },
+    {
+      "id": "D-703",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Snyk HashiCorp Vault integration for secrets context absent -- we have no Vault adapter",
+      "note": "Snyk Secrets correlates detected secrets against HashiCorp Vault to check if managed or leaked. pipeline.py has no Vault integration; no managed-secret suppression."
+    },
+    {
+      "id": "D-704",
+      "tier": "P3",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk remediation priority score (1-1000) absent -- we show raw CVSS only",
+      "note": "Snyk Priority Score factors in CVSS, reachability, exploitability, social trending, and business context. reports.py surfaces only the CVSS numeric score; no prioritisation beyond severity band."
+    },
+    {
+      "id": "D-705",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk Exploit Maturity flag absent -- we do not tag vulns with exploit availability",
+      "note": "Snyk labels each vuln with exploit maturity: No Known Exploit, Proof of Concept, Functional, or In The Wild. vuln_scanner.py has no exploit-maturity field; security teams cannot filter by weaponised exploits."
+    },
+    {
+      "id": "D-706",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/iac_scanner.py",
+      "title": "Snyk IaC supports AWS CDK -- we only scan raw Terraform/CloudFormation",
+      "note": "Snyk IaC synthesises CDK apps to CloudFormation before scanning. iac_scanner.py invokes Checkov on the file system with no CDK synthesis step; CDK-based infrastructure is entirely unscanned."
+    },
+    {
+      "id": "D-707",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/iac_scanner.py",
+      "title": "Snyk IaC supports Pulumi YAML -- we have no Pulumi support",
+      "note": "Snyk IaC parses Pulumi YAML stacks. iac_scanner.py detects Terraform, Docker, and k8s patterns; Pulumi files are silently ignored."
+    },
+    {
+      "id": "D-708",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/secret_scanner.py",
+      "title": "Snyk Secrets has 100+ provider patterns -- we have a narrower custom pattern set",
+      "note": "Snyk Secrets ships patterns for 100+ cloud providers including Alibaba, Tencent, and Yandex. secret_scanner.py covers major Western providers; non-US cloud providers are uncovered."
+    },
+    {
+      "id": "D-709",
+      "tier": "P4",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk share report link absent -- we require login to view reports",
+      "note": "Snyk generates a public share link for a scan report valid for 24h. reports.py has no public share token endpoint; sharing findings with external auditors requires giving them a full account."
+    },
+    {
+      "id": "D-710",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/scans.py",
+      "title": "Snyk .snyk ignore file support absent -- we have no per-repo ignore mechanism",
+      "note": "Snyk reads a .snyk YAML file from the repo root to suppress specific finding IDs. scans.py has no ignore-file loader; developers cannot suppress known-acceptable findings without modifying org policy."
+    },
+    {
+      "id": "D-711",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk curated vulnerability database faster than NVD -- we depend entirely on OSV",
+      "note": "Snyk maintains a proprietary research team that enriches CVEs within hours of disclosure. vuln_scanner.py queries OSV.dev which mirrors NVD; OSV lags Snyk database by 24-72h on novel CVEs."
+    },
+    {
+      "id": "D-712",
+      "tier": "P4",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk dependency graph visualisation absent -- we output a flat list",
+      "note": "Snyk renders an interactive dependency graph with the vulnerable node highlighted. reports.py generates a linear findings list with no graph structure, making it hard to trace transitive paths."
+    },
+    {
+      "id": "D-713",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Snyk SSO/SAML org integration absent -- we have only JWT auth",
+      "note": "Snyk supports SAML 2.0 SSO with attribute-based role mapping for enterprise orgs. pipeline.py has no SSO layer; app/api/deps.py uses JWT only. Enterprise IT departments require SAML for procurement sign-off."
+    },
+    {
+      "id": "D-714",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Snyk resolves Bazel BUILD files for transitive deps -- we have no Bazel parser",
+      "note": "Snyk dependency resolver handles Bazel WORKSPACE and BUILD files. dependency_resolver.py _MANIFEST_FILES dict has no Bazel entry; large monorepos using Bazel get zero dependency coverage."
+    },
+    {
+      "id": "D-715",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/iac_scanner.py",
+      "title": "Snyk IaC supports Serverless Framework YAML -- we have no Serverless parser",
+      "note": "Snyk IaC checks serverless.yml for over-permissioned Lambda IAM roles. iac_scanner.py does not specifically target serverless.yml; Serverless Framework findings are limited to generic YAML checks."
+    },
+    {
+      "id": "D-716",
+      "tier": "P5",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Snyk weekly email digest absent -- we have no email notification system",
+      "note": "Snyk sends a weekly email digest summarising new findings, resolved issues, and score trends. reports.py has no email templating or scheduler; proactive developer communication is absent."
+    },
+    {
+      "id": "D-717",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Snyk Code supports Kotlin Multiplatform -- Semgrep auto config has weak Kotlin coverage",
+      "note": "Snyk Code ships Kotlin rules for Android WebView exploits and deserialization. sast_scanner.py uses semgrep auto which has sparse Kotlin rules; Kotlin Multiplatform mobile projects get near-zero SAST coverage."
+    },
+    {
+      "id": "D-718",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/scans.py",
+      "title": "Snyk enterprise SOC2 audit log absent -- no immutable audit trail for scan trigger actions",
+      "note": "Snyk logs every scan trigger, finding suppression, and policy change to an immutable audit log accessible to CISO teams. scans.py has no audit log table; enterprise SOC2 auditors cannot trace who triggered a scan or suppressed a finding."
+    },
+    {
+      "id": "D-719",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/container_scanner.py",
+      "title": "Snyk scans Windows container images -- Trivy integration covers Linux only by default",
+      "note": "Snyk Container supports Windows-based images servercore and nanoserver. container_scanner.py invokes Trivy with default flags; Windows container image scanning requires --os-type windows flag which is absent."
+    },
+    {
+      "id": "D-720",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk EPSS integration absent -- we have no Exploit Prediction Scoring System data",
+      "note": "Snyk surfaces EPSS probability scores (0-1) alongside CVSS to help teams prioritise actively-exploited vulns. vuln_scanner.py enriches with NVD CVSS only; no FIRST.org EPSS API call, no exploitation probability field."
+    },
+    {
+      "id": "D-721",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Snyk ignores dev-only vulnerabilities on production images -- we flag all deps equally",
+      "note": "Snyk distinguishes devDependencies from production dependencies and suppresses dev-only vulns in production contexts. vuln_scanner.py receives all deps including dev:True with no production-context filter."
+    },
+    {
+      "id": "D-722",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/api/scans.py",
+      "title": "Snyk SOC2 immutable finding suppression log absent -- suppression actions are untraceable",
+      "note": "Snyk logs every finding suppression action and policy change to an immutable audit log. scans.py has no suppression-action audit table; suppression actions are untraceable for SOC2 audit requirements."
+    },
+    {
+      "id": "D-723",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep 2000+ community rules via registry -- we use single --config auto with no rule pinning",
+      "note": "Semgrep Registry hosts 2000+ curated rules updated continuously. sast_scanner.py runs semgrep --config auto with no version pinning, meaning scans silently change behaviour when the registry updates; enterprise customers require reproducible scans."
+    },
+    {
+      "id": "D-724",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep custom rule DSL absent -- we expose no custom-rule interface to customers",
+      "note": "Semgrep YAML DSL lets security teams write custom patterns in minutes. sast_scanner.py has no custom rule loader; customers cannot add organisation-specific patterns without modifying engine source."
+    },
+    {
+      "id": "D-725",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep taint analysis absent -- no taint mode enabled in our Semgrep invocation",
+      "note": "Semgrep taint mode tracks user-controlled data from source to sink across function calls. sast_scanner.py calls semgrep with --config auto which does not guarantee taint rules; the --taint-mode flag and source/sink rules are absent."
+    },
+    {
+      "id": "D-726",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep secrets detection with entropy analysis absent -- secret scanner uses single-pattern regex",
+      "note": "Semgrep secrets engine combines regex patterns with Shannon entropy scoring to catch high-entropy strings. sast_scanner.py and secret_scanner.py are separate passes with no entropy-augmented regex; high-entropy API keys in non-standard variable names are missed."
+    },
+    {
+      "id": "D-727",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep SARIF output absent -- we produce ZSE-internal JSON only",
+      "note": "Semgrep outputs SARIF 2.1.0 natively which GitHub Code Scanning and Azure DevOps consume directly. pipeline.py returns a ZSE Finding list; no SARIF serialiser, no native GitHub Code Scanning upload."
+    },
+    {
+      "id": "D-728",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep findings deduplication across branches absent -- we rescan from scratch every time",
+      "note": "Semgrep stores a scan fingerprint per finding so new findings on feature branches are reported incrementally vs main. sast_scanner.py has no fingerprint store; every scan re-emits all findings including those already known from main."
+    },
+    {
+      "id": "D-729",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep autofix suggestions as code diffs absent -- we provide only text advice",
+      "note": "Semgrep rules include a fix block that generates an inline code diff. sast_scanner.py parses Semgrep JSON but discards the fix field; developers see finding text with no machine-applicable remediation."
+    },
+    {
+      "id": "D-730",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep Pro Engine inter-file analysis absent -- we run open-source engine only",
+      "note": "Semgrep Pro Engine performs cross-file dataflow and type-aware analysis. sast_scanner.py invokes the open-source semgrep binary with no Pro Engine flag or team token configured."
+    },
+    {
+      "id": "D-731",
+      "tier": "P1",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep finding categories (security/correctness/performance) absent -- we map everything to security",
+      "note": "Semgrep labels findings across categories including correctness and performance. sast_scanner.py maps all Semgrep findings to FindingType.sast with no category subdivision; performance issues appear in security reports confusing triage."
+    },
+    {
+      "id": "D-732",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep Supply Chain reachability-aware SCA absent -- SCA and SAST run as non-integrated passes",
+      "note": "Semgrep Supply Chain correlates SAST call-graph data with SCA findings to determine if a vulnerable function is actually called. pipeline.py runs sast_scanner and vuln_scanner sequentially with no result correlation."
+    },
+    {
+      "id": "D-733",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep rule confidence level absent from our findings",
+      "note": "Semgrep rules carry metadata.confidence (LOW/MEDIUM/HIGH). sast_scanner.py finding mapper reads check_id and severity but ignores confidence metadata; users cannot filter out low-confidence experimental rules."
+    },
+    {
+      "id": "D-734",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep per-language coverage stats absent -- we collect finding count only",
+      "note": "Semgrep scan summary shows lines analysed and coverage per language. sast_scanner.py collects finding count only; no per-language coverage metric, no detection of unsupported languages."
+    },
+    {
+      "id": "D-735",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep baseline mode (delta scan) absent -- we have no baseline comparison",
+      "note": "Semgrep --baseline-commit compares findings against a baseline commit and reports only new findings. sast_scanner.py has no baseline flag; every PR scan shows the full finding set including pre-existing issues."
+    },
+    {
+      "id": "D-736",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep Team policy enforcement gates absent -- we have no scan policy object",
+      "note": "Semgrep Teams lets admins set policies that block merges on HIGH findings. pipeline.py returns results with no enforcement policy; merge-blocking is decided externally."
+    },
+    {
+      "id": "D-737",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep .semgrepignore file support absent -- we have no per-repo SAST ignore mechanism",
+      "note": "Semgrep reads .semgrepignore to exclude paths. sast_scanner.py passes the full repo_dir to semgrep with no per-repo ignore file; generated code inflates finding counts."
+    },
+    {
+      "id": "D-738",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep rule false-positive rate metrics absent -- we have no rule quality tracking",
+      "note": "Semgrep tracks per-rule false-positive rates and demotes high-FP rules. sast_scanner.py has no rule metric collection; we cannot identify which rules produce the most noise."
+    },
+    {
+      "id": "D-739",
+      "tier": "P2",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep findings with code snippet in report absent -- our findings show file:line only",
+      "note": "Semgrep JSON output includes the matching source code snippet. sast_scanner.py maps extra.lines from Semgrep but reports.py does not include the code snippet in PDF/JSON output; engineers must checkout the repo to see the offending code."
+    },
+    {
+      "id": "D-740",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep private rule registry absent -- custom rules must be bundled into engine Docker image",
+      "note": "Semgrep Enterprise lets teams publish internal rules to a private registry fetched at scan time. sast_scanner.py has no registry URL config; custom rules must be bundled into the engine Docker image."
+    },
+    {
+      "id": "D-741",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep --include/--exclude glob patterns absent -- we scan entire repo unconditionally",
+      "note": "Semgrep supports --include and --exclude glob patterns to focus scans on specific paths. sast_scanner.py passes only the repo_dir with no path filtering; large monorepos with generated code waste scan time and inflate findings."
+    },
+    {
+      "id": "D-742",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep experimental Swift/Objective-C rules absent -- we have no iOS SAST coverage",
+      "note": "Semgrep ships experimental Swift and Objective-C rules for iOS security issues. sast_scanner.py has no iOS-specific rule config; mobile repos get no iOS SAST coverage."
+    },
+    {
+      "id": "D-743",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep supports scanning Jupyter notebooks -- .ipynb cells may be missed by our invocation",
+      "note": "Semgrep can extract and scan Python cells from .ipynb files. sast_scanner.py scans whatever semgrep auto detects but .ipynb support requires explicit language config; data science repos with hard-coded credentials in notebooks may be missed."
+    },
+    {
+      "id": "D-744",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep Assistant AI triage absent -- we have no AI-assisted finding triage",
+      "note": "Semgrep Assistant uses GPT-4 to evaluate finding context and auto-triage true positives vs false positives. pipeline.py has no AI triage layer; all finding evaluation is manual."
+    },
+    {
+      "id": "D-745",
+      "tier": "P3",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep scan history timeline absent -- we store no historical scan results",
+      "note": "Semgrep Cloud Platform shows a timeline of scans with finding count trends. reports.py generates per-scan output; no scan history table, no trend query, no regression detection."
+    },
+    {
+      "id": "D-746",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep Pro rules require login token -- we run unauthenticated semgrep missing Pro rules",
+      "note": "Semgrep Pro rules including taint and supply chain require a SEMGREP_APP_TOKEN. sast_scanner.py has no token injection; SEMGREP_APP_TOKEN is not referenced in config.py or the scan subprocess call."
+    },
+    {
+      "id": "D-747",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep scan timing per rule absent -- we have no per-rule timing instrumentation",
+      "note": "Semgrep --time outputs per-rule scan duration. sast_scanner.py does not capture timing data; we cannot identify which rules are bottlenecking large-repo scans."
+    },
+    {
+      "id": "D-748",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep supports scanning git history for secrets -- we scan working tree only",
+      "note": "Semgrep secret scanner can scan git commit history to find secrets that were committed and then deleted. pipeline.py clones and scans working tree HEAD; no git log --diff scan, no historical secret detection."
+    },
+    {
+      "id": "D-749",
+      "tier": "P4",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep finding status workflow (open/fixed/ignored/false-positive) -- we have only open/done",
+      "note": "Semgrep Cloud has a 4-state finding lifecycle. dispatch-status.json uses open/done only; no false-positive state, no ignored state with expiry, no finding re-open on regression."
+    },
+    {
+      "id": "D-750",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep --max-memory flag absent -- we have no memory limit for large repos",
+      "note": "Large repos can cause Semgrep to OOM. sast_scanner.py subprocess call has no --max-memory flag; on large monorepos the semgrep process can consume all available RAM and crash the scan worker."
+    },
+    {
+      "id": "D-751",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep experimental Rust rules absent -- we have weak Rust SAST coverage",
+      "note": "Semgrep ships experimental Rust rules for unsafe block misuse. sast_scanner.py relies on auto config which has sparse Rust rules; Rust backend repos get minimal SAST coverage."
+    },
+    {
+      "id": "D-752",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep SBOM integration with SCA correlation absent -- our SBOM and SCA are not linked",
+      "note": "Semgrep Supply Chain correlates SBOM component data with SCA findings. pipeline.py runs sbom_generator and vuln_scanner independently with no SBOM-SCA correlation step."
+    },
+    {
+      "id": "D-753",
+      "tier": "P5",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep Slack/Teams webhook notifications absent -- we have no real-time notification channel",
+      "note": "Semgrep Cloud sends Slack and Teams messages on new HIGH/CRITICAL findings. reports.py generates static output only; no outbound notification webhook."
+    },
+    {
+      "id": "D-754",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep handles minified JS with heuristics -- we pass minified bundles without de-minification",
+      "note": "Semgrep has heuristics to skip or warn on minified JavaScript. sast_scanner.py scans the full repo including dist/ bundles; minified files produce thousands of noisy findings that obscure real issues in source."
+    },
+    {
+      "id": "D-755",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/secret_scanner.py",
+      "title": "Semgrep secrets multi-rule correlation absent -- our secret scanner uses single-pattern regex only",
+      "note": "Semgrep secrets engine correlates multiple low-confidence signals (regex + entropy + context keywords) into a high-confidence finding. secret_scanner.py applies a single regex per pattern type; no multi-signal correlation."
+    },
+    {
+      "id": "D-756",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep PHP taint rules cover 200+ sinks -- we have near-zero PHP-specific SAST coverage",
+      "note": "Semgrep PHP ruleset includes 200+ taint sinks for Laravel, Symfony, and WordPress. sast_scanner.py invokes Semgrep auto which has limited PHP coverage; PHP codebases get a fraction of the SAST depth competitors provide."
+    },
+    {
+      "id": "D-757",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep .semgrepconfig.yml for per-project rule selection absent -- all repos get the same config",
+      "note": "Semgrep reads a .semgrepconfig.yml to override global rule settings. sast_scanner.py passes the same --config auto to every repo; customers cannot choose a focused ruleset for their tech stack."
+    },
+    {
+      "id": "D-758",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep rule metadata CWE and OWASP tags stripped from our findings",
+      "note": "Semgrep rules include metadata.cwe and metadata.owasp keys. sast_scanner.py maps rule_id and severity only; CWE and OWASP tags are discarded, preventing compliance mapping to OWASP Top 10."
+    },
+    {
+      "id": "D-759",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Semgrep parallel rule execution absent -- we run Semgrep without explicit jobs configuration",
+      "note": "Semgrep automatically parallelises rule execution across CPU cores. sast_scanner.py launches a single semgrep process; no --jobs flag, defaulting to semgrep parallelism which may be suboptimal in containerised environments with CPU limits."
+    },
+    {
+      "id": "D-760",
+      "tier": "P4",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Semgrep CSV export for spreadsheet-based triage absent -- we export JSON/PDF only",
+      "note": "Semgrep Cloud exports findings as CSV for Excel-based triage workflows. reports.py has PDF and JSON endpoints; no CSV export, blocking security teams that use spreadsheets."
+    },
+    {
+      "id": "D-761",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep --error flag for strict CI mode absent -- we always exit gracefully from SAST",
+      "note": "Semgrep --error causes the process to exit non-zero on any finding, enabling strict CI gates. sast_scanner.py checks proc.returncode in (0, 1) and treats 1 as normal; CI pipelines cannot use our SAST phase as a hard gate."
+    },
+    {
+      "id": "D-762",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/sast_scanner.py",
+      "title": "Semgrep supports Apex (Salesforce) -- we have no Apex language support",
+      "note": "Semgrep ships Apex rules for SOQL injection and insecure DML. sast_scanner.py has no Apex-specific config; Salesforce platform teams get zero SAST coverage."
+    },
+    {
+      "id": "D-763",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev install script detection absent -- we do not flag npm packages with postinstall scripts",
+      "note": "Socket.dev flags any npm package with a postinstall, preinstall, or install script as a supply chain risk. dependency_resolver.py parses package-lock.json for version info only; no scripts field inspection, no install-script risk flag on any dependency."
+    },
+    {
+      "id": "D-764",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev typosquatting detection absent -- we have no name-similarity analysis",
+      "note": "Socket.dev computes Levenshtein distance between package names and popular packages to flag typosquats (lodahs vs lodash). dependency_resolver.py resolves package names from manifest files with no similarity check; typosquatted packages pass through silently."
+    },
+    {
+      "id": "D-765",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev protestware detection absent -- we have no maintainer-intent analysis",
+      "note": "Socket.dev flagged colors and faker protestware modifications by analysing git diff patterns and release anomalies. dependency_resolver.py has no package-behaviour diff analysis; protestware packages are undetected."
+    },
+    {
+      "id": "D-766",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Socket.dev dependency confusion attack detection absent -- no namespace collision check",
+      "note": "Socket.dev checks whether a private scoped package has a matching public package that could be resolved instead (dependency confusion attack). vuln_scanner.py queries OSV for CVEs only; no namespace collision analysis."
+    },
+    {
+      "id": "D-767",
+      "tier": "P0",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev malicious package detection via 70+ behavioural signals -- we rely on CVE existence only",
+      "note": "Socket detects malicious packages through 70+ signals: minified code obfuscation, dynamic eval, network calls in install scripts, environment variable exfiltration. dependency_resolver.py extracts name/version/ecosystem only; no behavioural signal analysis."
+    },
+    {
+      "id": "D-768",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev package provenance verification absent -- no source attestation check",
+      "note": "Socket verifies that npm packages have a matching source repository with a linked publish action (SLSA provenance). dependency_resolver.py has no provenance check; packages published anonymously with no source link are not flagged."
+    },
+    {
+      "id": "D-769",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev maintainer account takeover detection absent -- no author anomaly analysis",
+      "note": "Socket flags packages where the maintainer account was recently transferred or a new author published a major version. dependency_resolver.py has no npm registry author-history query; compromised maintainer accounts go undetected."
+    },
+    {
+      "id": "D-770",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev deprecated package warnings absent -- sbom_generator hard-codes only 8 deprecated names",
+      "note": "Socket surfaces npm deprecation notices from the registry as findings. dependency_resolver.py does not query the npm registry for deprecation status; sbom_generator.py _KNOWN_DEPRECATED set contains only 8 packages."
+    },
+    {
+      "id": "D-771",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev new package with no prior release history flagging absent -- zero-history packages undetected",
+      "note": "Socket flags packages published for the first time within the past 30 days as high-risk. dependency_resolver.py has no npm registry first-publish-date check."
+    },
+    {
+      "id": "D-772",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev package obfuscated code detection absent -- we do not analyse package source code",
+      "note": "Socket runs a static obfuscation detector against unpacked package source to flag hex-encoded strings and eval(unescape()) patterns. dependency_resolver.py processes only manifest metadata; no package unpacking, no obfuscation analysis."
+    },
+    {
+      "id": "D-773",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev excessively broad file system access permissions detection absent -- no package capability check",
+      "note": "Socket analyses which npm packages access the file system, network, or child processes and flags packages with capabilities exceeding their stated purpose. dependency_resolver.py has no capability analysis."
+    },
+    {
+      "id": "D-774",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Socket.dev GitHub app PR diff analysis absent -- we require full repo clone for every scan",
+      "note": "Socket GitHub App analyses only the dependency diff in each PR rather than cloning the full repo. pipeline.py clones the entire repository for every scan; Socket incremental diff approach is 10x faster for large repos."
+    },
+    {
+      "id": "D-775",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev telemetry package detection absent -- we do not flag packages that phone home",
+      "note": "Socket flags npm packages that make outbound HTTP calls during normal use to external analytics endpoints. dependency_resolver.py has no network-call detection in package source; telemetry packages are not risk-flagged."
+    },
+    {
+      "id": "D-776",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev package age scoring absent -- we treat all packages equally regardless of age",
+      "note": "Socket uses package age as a risk signal (newly published packages get higher risk scores). dependency_resolver.py has no npm registry age query; a 2-day-old package gets the same trust as a 10-year-old one."
+    },
+    {
+      "id": "D-777",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev download count anomaly detection absent -- we have no popularity signal",
+      "note": "Socket flags packages with sudden download spikes indicating targeted install campaigns. dependency_resolver.py has no npm download statistics query; install-campaign attacks are undetected."
+    },
+    {
+      "id": "D-778",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks for minified/bundled code in package -- we do not inspect package dist files",
+      "note": "Socket flags packages that ship minified production code without a source map as a code-hiding risk. dependency_resolver.py processes manifest files only; no dist-file inspection."
+    },
+    {
+      "id": "D-779",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev GitHub repository link verification absent -- we do not validate that repo field resolves",
+      "note": "Socket checks that the repository field in package.json resolves to a live GitHub repo. dependency_resolver.py does not follow the repository field; orphaned packages with dead repo links pass through."
+    },
+    {
+      "id": "D-780",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Socket.dev checks PyPI packages for install-time code execution -- we only check PyPI for CVEs",
+      "note": "Socket analyses setup.py and pyproject.toml for code executed at pip install time. vuln_scanner.py queries OSV for PyPI CVEs only; install-time code execution in Python packages is not detected."
+    },
+    {
+      "id": "D-781",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev detects packages that access environment variables at install time -- absent from our scanner",
+      "note": "Socket flags npm packages whose install scripts read process.env (potential credential harvesting). dependency_resolver.py has no install-script analysis; packages harvesting environment variables at install time go undetected."
+    },
+    {
+      "id": "D-782",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev detects packages with native C addons -- we do not flag gyp/node-pre-gyp packages",
+      "note": "Socket highlights packages with native C addons (binding.gyp) as elevated risk. dependency_resolver.py has no native-addon detection."
+    },
+    {
+      "id": "D-783",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev package author email domain reputation absent -- no author trust scoring",
+      "note": "Socket checks if maintainer email domains are free webmail (gmail, protonmail) vs corporate domains. dependency_resolver.py has no npm registry author-email query."
+    },
+    {
+      "id": "D-784",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Socket.dev real-time package risk feed absent -- we have no live threat intelligence subscription",
+      "note": "Socket maintains a real-time feed of newly detected malicious packages and pushes alerts to subscribed orgs. pipeline.py fetches vulnerability data from OSV/NVD at scan time only; no real-time threat intelligence subscription."
+    },
+    {
+      "id": "D-785",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks for packages with shell access in browser context -- no runtime context distinction",
+      "note": "Socket flags browser-side npm packages that use child_process or fs. dependency_resolver.py has no browser-context vs server-context distinction; frontend packages with shell access are not specially flagged."
+    },
+    {
+      "id": "D-786",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks if package has been unpublished and republished -- no publish-history analysis",
+      "note": "Unpublishing and republishing an npm package is a red flag for content substitution. Socket checks npm registry publish history. dependency_resolver.py has no publish-event timeline query."
+    },
+    {
+      "id": "D-787",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev detects packages using dynamic require() -- no dynamic import analysis",
+      "note": "Socket flags packages using dynamic require(variable) patterns that obscure what code is loaded at runtime. dependency_resolver.py does not inspect package source; dynamic import obfuscation is undetected."
+    },
+    {
+      "id": "D-788",
+      "tier": "P3",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev license mismatch between package.json and LICENSE file -- we do not cross-check",
+      "note": "Socket flags packages where the license in package.json differs from the LICENSE file content. license_scanner.py checks license declarations only; no cross-validation against the actual LICENSE file text."
+    },
+    {
+      "id": "D-789",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev detects packages with unusually large source size -- no package size signal",
+      "note": "Packages with unusually large source relative to their stated function are flagged by Socket as potential code-hiding. dependency_resolver.py has no package size check."
+    },
+    {
+      "id": "D-790",
+      "tier": "P4",
+      "agent": "thariq",
+      "status": "open",
+      "file": "app/api/reports.py",
+      "title": "Socket.dev per-package risk scorecard (0-100) absent -- we show package-level CVE count only",
+      "note": "Socket generates a per-package risk scorecard combining supply chain signals, CVE history, and code quality. reports.py shows finding-level data; no per-package aggregate risk score."
+    },
+    {
+      "id": "D-791",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Socket.dev org-level package block list absent -- no automated banned-package enforcement",
+      "note": "Socket lets orgs define a package block list that fails any PR adding a blocked package. pipeline.py has no block-list loader; banned packages can be added to repos without automated detection."
+    },
+    {
+      "id": "D-792",
+      "tier": "P4",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks for packages that patch global prototypes -- no prototype-pollution signal",
+      "note": "Socket flags packages that modify Object.prototype or Array.prototype (prototype pollution risk). dependency_resolver.py has no source-level prototype modification check."
+    },
+    {
+      "id": "D-793",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks for hidden Unicode in package source -- no Unicode obfuscation detection",
+      "note": "Socket detects invisible Unicode characters (Bidi override, zero-width space) in package source (Trojan Source attacks). dependency_resolver.py has no Unicode anomaly scanner."
+    },
+    {
+      "id": "D-794",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev tracks package funding links absent -- no funding/sponsorship transparency signal",
+      "note": "Socket surfaces packages with no funding.url as a sustainability risk signal. dependency_resolver.py has no funding metadata extraction; sustainability risk is not surfaced."
+    },
+    {
+      "id": "D-795",
+      "tier": "P5",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks for packages dual-licensed with viral terms -- we check license at top level only",
+      "note": "Socket flags packages that list MIT in package.json but include GPL-licensed files within the tarball. license_scanner.py checks the declared license field only; intra-package license mixing is not detected."
+    },
+    {
+      "id": "D-796",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Socket.dev Slack bot for real-time PR risk alerts absent -- we have no bot integration",
+      "note": "Socket Slack bot posts a risk summary comment on every PR that adds dependencies. pipeline.py produces scan results with no outbound Slack webhook."
+    },
+    {
+      "id": "D-797",
+      "tier": "P2",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Socket.dev checks Rust crates for unsafe blocks -- we scan Cargo.lock for CVEs only",
+      "note": "Socket analyses Rust crate source for unsafe {} block density and flags crates with high unsafe usage. dependency_resolver.py resolves Cargo.lock for CVE lookup only; unsafe block analysis on crate source is absent."
+    },
+    {
+      "id": "D-798",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot grouped updates absent -- we generate one fix PR per vulnerability with no grouping",
+      "note": "Dependabot grouped-updates batches compatible dependency upgrades into a single PR. fix_generator.py generates individual fix PRs per finding; repos with 50 outdated packages would get 50 separate PRs causing PR flood and reviewer fatigue."
+    },
+    {
+      "id": "D-799",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot auto-merge on passing CI absent -- our fix PRs require manual merge",
+      "note": "Dependabot sets the auto-merge flag on PRs for patch-level updates with green CI. fix_generator.py opens PRs via GitHub API but does not set the auto_merge field; all fix PRs require manual merge."
+    },
+    {
+      "id": "D-800",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "Dependabot GitHub Security Advisories database absent -- we rely on OSV only",
+      "note": "Dependabot sources from the GitHub Advisory Database (GHSA) which includes advisories not yet in NVD/OSV, particularly for GitHub Actions packages. vuln_scanner.py queries OSV.dev only; GHSA-only advisories are missed."
+    },
+    {
+      "id": "D-801",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot private package registry support absent -- we cannot scan private registries",
+      "note": "Dependabot authenticates to private npm/PyPI/Maven registries (Artifactory, Nexus, GitHub Packages) to resolve private dependencies. dependency_resolver.py resolves from manifest files only; private package versions cannot be resolved or scanned."
+    },
+    {
+      "id": "D-802",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot version pinning strategies not respected -- we always suggest exact version bumps",
+      "note": "Dependabot respects the original semver range strategy and produces an upgrade within the declared range. fix_generator.py _apply_version_bump replaces any existing version specifier with the exact fix version, potentially breaking intentional range strategies."
+    },
+    {
+      "id": "D-803",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot dependabot.yml ignore configuration absent -- we have no per-repo ignore config",
+      "note": "Dependabot reads .github/dependabot.yml for package-ecosystem ignores and schedule config. fix_generator.py has no dependabot.yml reader; all fix suggestions are generated regardless of team-configured ignores."
+    },
+    {
+      "id": "D-804",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot PR labels and assignees absent -- our fix PRs have no metadata",
+      "note": "Dependabot sets labels (security, dependencies), assignees, and reviewers on PRs from dependabot.yml config. fix_generator.py creates a bare PR with no labels, no assignees, no reviewers; PRs are invisible in org-level PR filters."
+    },
+    {
+      "id": "D-805",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Dependabot scheduled update cadence absent -- we have no recurring update schedule",
+      "note": "Dependabot runs on daily/weekly/monthly schedules defined per ecosystem. pipeline.py runs scans on demand only; no scheduler, no recurring security update trigger."
+    },
+    {
+      "id": "D-806",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot supports GitHub Actions version updates -- we have no Actions scanning",
+      "note": "Dependabot monitors .github/workflows/*.yml for outdated action versions and creates PRs to bump them. fix_generator.py _MANIFEST_ECOSYSTEM_MAP has no GitHub Actions entry; supply chain risk via outdated Actions is undetected."
+    },
+    {
+      "id": "D-807",
+      "tier": "P1",
+      "agent": "boris",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot resolves Docker image tags in workflows -- we ignore image references in YAML",
+      "note": "Dependabot tracks Docker image versions in Dockerfiles and GitHub Actions workflow files and creates PRs to update them. dependency_resolver.py has no image-tag resolver; outdated base images in Dockerfiles are detected only by Trivy, not as dependency updates."
+    },
+    {
+      "id": "D-808",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot rebases open PRs when target branch updates -- we never update stale fix PRs",
+      "note": "Dependabot automatically rebases its open PRs when the target branch advances, keeping them merge-ready. fix_generator.py opens PRs and never touches them again; fix PRs go stale and accumulate merge conflicts."
+    },
+    {
+      "id": "D-809",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot resolves Terraform module versions -- we only scan providers via Checkov",
+      "note": "Dependabot creates PRs to update Terraform module source version constraints. dependency_resolver.py has no Terraform module version parser; outdated Terraform module versions are not flagged as dependency updates."
+    },
+    {
+      "id": "D-810",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports Gradle Kotlin DSL (build.gradle.kts) -- we only parse build.gradle",
+      "note": "Dependabot resolves Kotlin DSL Gradle build files. dependency_resolver.py _MANIFEST_FILES has build.gradle but not build.gradle.kts; Kotlin-DSL Android/JVM projects get no dependency scanning."
+    },
+    {
+      "id": "D-811",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports hex.pm (Elixir) -- we have no Elixir ecosystem support",
+      "note": "Dependabot resolves mix.lock files for Elixir projects. dependency_resolver.py has no hex.pm ecosystem; Elixir/Phoenix projects get zero dependency coverage."
+    },
+    {
+      "id": "D-812",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports pub.dev (Dart/Flutter) -- we have no Dart ecosystem support",
+      "note": "Dependabot resolves pubspec.lock for Dart and Flutter projects. dependency_resolver.py has no pub.dev ecosystem entry; Flutter mobile apps get zero dependency coverage."
+    },
+    {
+      "id": "D-813",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports Swift Package Manager -- we have no SwiftPM support",
+      "note": "Dependabot resolves Package.resolved for Swift projects. dependency_resolver.py has no SwiftPM manifest parser; iOS/macOS Swift projects get zero dependency coverage."
+    },
+    {
+      "id": "D-814",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports conda (Python scientific ecosystem) -- we have no conda support",
+      "note": "Dependabot resolves conda environment.yml and conda-lock.yml. dependency_resolver.py has no conda parser; data science repos using Anaconda get zero dependency scanning."
+    },
+    {
+      "id": "D-815",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot PR body includes changelog excerpt -- our fix PRs have no changelog content",
+      "note": "Dependabot fetches the upstream CHANGELOG.md or GitHub Releases and embeds the relevant excerpt in the PR body. fix_generator.py generates a generic PR body with no changelog content."
+    },
+    {
+      "id": "D-816",
+      "tier": "P2",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports Bundler groups -- we treat all Ruby gems equally",
+      "note": "Dependabot respects Bundler group constraints (development, test) and can limit updates to specific groups. dependency_resolver.py Gemfile.lock parser does not extract group membership; all gems are treated as production dependencies."
+    },
+    {
+      "id": "D-817",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot compatibility score on PRs absent -- our fix PRs show no compatibility signal",
+      "note": "Dependabot computes a compatibility score based on CI pass rates across its user base for the proposed upgrade. fix_generator.py uses assess_breaking_risk() based on semver distance only; no empirical compatibility data."
+    },
+    {
+      "id": "D-818",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot version update PR with security advisory link absent -- our PRs link to fix_version only",
+      "note": "Dependabot embeds the GHSA advisory URL and CVE link directly in the PR body. fix_generator.py PR body includes the finding title and fix version but no direct GHSA or NVD advisory URL link."
+    },
+    {
+      "id": "D-819",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/pipeline.py",
+      "title": "Dependabot security updates vs version updates separation absent -- we conflate them",
+      "note": "Dependabot distinguishes security-driven updates (GHSA-triggered) from general version updates. pipeline.py produces a unified finding list; teams cannot configure different policies for security vs maintenance updates."
+    },
+    {
+      "id": "D-820",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports Maven BOMs -- we parse pom.xml without BOM resolution",
+      "note": "Dependabot resolves Maven BOM imports to determine effective dependency versions. dependency_resolver.py pom.xml parser reads direct dependencies only; BOM-managed versions are left as unresolved property placeholders."
+    },
+    {
+      "id": "D-821",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot adds Signed-off-by to commits for DCO compliance -- our fix PRs have no DCO signing",
+      "note": "Dependabot commits include Signed-off-by headers for DCO compliance. fix_generator.py creates commits via GitHub Contents API with no DCO signature; repos requiring DCO will reject Zaphenath fix PRs."
+    },
+    {
+      "id": "D-822",
+      "tier": "P3",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports conan (C++ package manager) -- we have no conan support",
+      "note": "Dependabot resolves conanfile.txt and conanfile.py for C++ projects. dependency_resolver.py has no conan ecosystem; C++ embedded and game projects using Conan get zero dependency coverage."
+    },
+    {
+      "id": "D-823",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot supports dry-run mode -- our fix generator always writes to GitHub",
+      "note": "Dependabot can simulate updates and report what PRs would be opened without creating them. fix_generator.py makes live GitHub API calls with no dry-run flag; testing in staging environments is error-prone."
+    },
+    {
+      "id": "D-824",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports pip-compile for locked Python deps -- we parse requirements.txt directly without resolution",
+      "note": "Dependabot can run pip-compile to produce a fully-resolved requirements.txt before scanning. dependency_resolver.py uses pip-compile via subprocess only if available; the fallback to raw requirements.txt leaves version ranges unresolved."
+    },
+    {
+      "id": "D-825",
+      "tier": "P4",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot max open PR limit absent -- we have no PR throttle",
+      "note": "Dependabot open-pull-requests-limit setting caps the number of open fix PRs. fix_generator.py has no limit check; a repo with 100 outdated packages would open 100 PRs simultaneously hitting GitHub API limits."
+    },
+    {
+      "id": "D-826",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/dependency_resolver.py",
+      "title": "Dependabot supports gitsubmodule updates -- we have no submodule resolver",
+      "note": "Dependabot creates PRs to update git submodule references. dependency_resolver.py has no .gitmodules parser; repositories using submodules get no version-update coverage."
+    },
+    {
+      "id": "D-827",
+      "tier": "P5",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/fix_generator.py",
+      "title": "Dependabot milestones on PRs absent -- our fix PRs have no milestone or project association",
+      "note": "Dependabot can assign GitHub milestones to fix PRs for sprint planning. fix_generator.py GitHub API call has no milestone parameter; fix PRs cannot be associated with development milestones."
+    },
+    {
+      "id": "D-828",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no supply chain category weight -- supply chain risk folded into dependency score incorrectly",
+      "note": "_WEIGHTS in scorer.py has 5 categories (dependency 35%, sast 25%, secrets 25%, iac 10%, license 5%). Supply chain findings are absent as a distinct category; a repo with zero CVEs but 5 malicious packages scores 100 on dependency, which is mathematically wrong."
+    },
+    {
+      "id": "D-829",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: CI/CD bonus additive after weighted average can inflate score above calibrated baseline",
+      "note": "calculate_score() adds +5 for CI/CD config and +3 for SECURITY.md after computing the weighted average. A repo with a critical vuln scoring 87/100 gets bumped to 95 just by having a .github/workflows file; this is not calibrated against industry benchmarks and rewards presence of files not absence of risk."
+    },
+    {
+      "id": "D-830",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: floor of 1 per category before weighted average distorts worst-case scoring -- bonus exploitable",
+      "note": "category_scores[cat] = max(1, ...) floors every category at 1 before the weighted average. The code then adds bonus points (up to +8) meaning a catastrophically insecure repo with CI/CD can score 9/100 instead of 1/100; the floor is applied at the wrong stage distorting the penalty regime."
+    },
+    {
+      "id": "D-831",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: secret deduction (20 for critical) is disproportionate vs Snyk/Semgrep priority weighting",
+      "note": "_DEDUCTIONS maps FindingType.secret.critical to 20 and FindingType.vulnerability.critical to 15. A single critical secret deducts the entire secrets category; Snyk and Semgrep weight secrets lower than critical vulns in their priority score formula. The 20-point value is empirically uncalibrated."
+    },
+    {
+      "id": "D-832",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: diminishing returns formula creates a gameable soft floor exploitable by finding splitting",
+      "note": "The diminishing returns formula factor = 1.0 / (1.0 + count * 0.5) means the 100th critical finding of the same type costs only ~0.02 of the base deduction. An adversary can game the score by splitting a single large vulnerability into many sub-findings of the same severity, exploiting the per-(category, severity) counter key."
+    },
+    {
+      "id": "D-833",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no contextual weight adjustment for repo type -- a library scores the same as a deployed API",
+      "note": "calculate_score() applies fixed _WEIGHTS regardless of repo context. Snyk and Dependabot apply higher weights to vulns in production-deployed services vs internal libraries. scorer.py has no repo_type parameter; a test fixture repo and a customer-facing API receive identical score penalties."
+    },
+    {
+      "id": "D-834",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: CVSS score not used to modulate deduction -- 4-band discretisation loses 80% of CVSS signal",
+      "note": "_DEDUCTIONS maps Severity enum (critical/high/medium/low) to fixed point values. A CVSS 9.1 and a CVSS 9.9 both deduct 15 points as critical. Snyk Priority Score uses the actual CVSS numeric value; our 4-band discretisation loses 80% of the CVSS signal."
+    },
+    {
+      "id": "D-835",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: license weight (5%) too low for enterprise deals -- calibrated benchmark is 15-20%",
+      "note": "_WEIGHTS assigns license only 5% weight. Enterprise legal teams use license risk as a primary procurement blocker (GPL in a commercial product is a deal-killer). Calibrating against real enterprise procurement data, license risk should be 15-20% weight; the current 5% systematically underscores license risk."
+    },
+    {
+      "id": "D-836",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no penalty for missing SBOM -- repos with no SBOM score the same as repos with full SBOM",
+      "note": "calculate_score() has no SBOM-presence check. Snyk and Socket reward repos with a valid CycloneDX SBOM. scorer.py gives no bonus for SBOM presence and no penalty for absence; SBOM adoption is not incentivised."
+    },
+    {
+      "id": "D-837",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: integer category scores lose floating-point precision before aggregation causing 1-3 point error",
+      "note": "category_scores dict stores int values (starting at 100, deducting integers). The weighted sum is computed on integers; rounding errors compound when multiple categories near their floor values. Snyk uses floating-point category scores throughout; our integer truncation can produce scores 1-3 points off the correct float result."
+    },
+    {
+      "id": "D-838",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: _check_bonus_cicd checks file existence only -- a docs-only CI config earns same +5 as security CI",
+      "note": "_check_bonus_cicd() returns True if any CI/CD config file exists. A .github/workflows/docs.yml that publishes documentation gets the same +5 as a workflow running SAST and dependency audits. The bonus should require CI workflows that invoke security tooling."
+    },
+    {
+      "id": "D-839",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: SECURITY.md bonus awarded for any non-empty file -- a one-line placeholder earns +3",
+      "note": "_check_bonus_security_policy() calls os.path.isfile() with no content validation. A SECURITY.md containing only a TODO earns the same +3 as a fully-detailed disclosure policy. Snyk requires a valid contact email or URL in the SECURITY.md before awarding this signal."
+    },
+    {
+      "id": "D-840",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no time-decay for old findings -- a 3-year-old low CVE deducts same as a zero-day",
+      "note": "_DEDUCTIONS are static per severity. Snyk Priority Score applies a temporal factor: newly published CVEs in the past 30 days score higher than old CVEs with no known exploit activity. scorer.py has no finding.published_date field consideration; time-sensitivity is absent."
+    },
+    {
+      "id": "D-841",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no reachability factor -- unreachable critical vulns deduct same as reachable ones",
+      "note": "calculate_score() applies _DEDUCTIONS uniformly regardless of reachability. When reachability analysis is implemented (gap D-675), scorer.py must accept a reachable flag per finding and apply a 0.2x multiplier for unreachable findings to align with Snyk scoring model."
+    },
+    {
+      "id": "D-842",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: score not percentile-normalised -- a 73/100 has no meaning without population baseline",
+      "note": "calculate_score() returns an absolute score with no reference to industry or peer percentile. Snyk dashboard shows better than 68% of similar repos. scorer.py has no population baseline; a score of 73 is uninterpretable without context."
+    },
+    {
+      "id": "D-843",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: IaC weight (10%) does not scale with IaC-heavy repos -- fixed weight regardless of IaC file count",
+      "note": "_WEIGHTS iac = 0.10 is applied regardless of whether the repo has 0 or 500 IaC files. For infrastructure-as-code repositories, the IaC category should carry 40-50% weight. The fixed weight systematically undersigns IaC risk for infra repos."
+    },
+    {
+      "id": "D-844",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: overall score rounded to integer -- sub-1-point score changes from fixing medium findings are invisible",
+      "note": "overall = round(overall) drops fractional score. A change from 79.6 to 79.4 after fixing a medium finding is invisible (both round to 80). Snyk shows one decimal place on scores; our integer rounding makes small improvements unrewarding."
+    },
+    {
+      "id": "D-845",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no separate score for open-source vs commercial component risk",
+      "note": "calculate_score() computes one overall score. Enterprise customers need separate OSS risk scores vs commercial library risk scores. Snyk differentiates; scorer.py has no component-origin distinction."
+    },
+    {
+      "id": "D-846",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: _TYPE_TO_CATEGORY maps container vulns to dependency category -- container risk invisible as distinct category",
+      "note": "Container scan findings from container_scanner.py use FindingType.vulnerability. _TYPE_TO_CATEGORY maps them to dependency category, mixing container OS package vulnerabilities with application dependency vulnerabilities in a single score bucket; container risk is invisible as a distinct category."
+    },
+    {
+      "id": "D-847",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: weight sum assert uses Python assert -- stripped by -O flag in optimised Docker builds",
+      "note": "The assert abs(sum(_WEIGHTS.values()) - 1.0) < 1e-9 fires at module import. Python -O flag strips assert statements; if the engine runs with -O (common in some Docker setups), this safety check is silently disabled and weight drift goes undetected."
+    },
+    {
+      "id": "D-848",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no deduplication of findings across manifests -- same CVE in 5 package.json files deducts 5 times",
+      "note": "calculate_score() deducts for every Finding in the list. A monorepo with 5 package.json files each depending on a vulnerable package produces 5 findings, each deducting points for the same CVE, artificially deflating the score."
+    },
+    {
+      "id": "D-849",
+      "tier": "P4",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: no score confidence interval -- a scan of 10 files and 10000 files return equally confident scores",
+      "note": "calculate_score() returns a point estimate with no confidence interval. A small repo with few deps should carry wider uncertainty bands than a large repo. scorer.py has no scan-coverage input; score certainty is not communicated to the user."
+    },
+    {
+      "id": "D-850",
+      "tier": "P4",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: _DEDUCTIONS has no FindingType for container vulnerabilities -- conflated with app-layer vulns",
+      "note": "_DEDUCTIONS dict covers vulnerability, sast, secret, iac, license. Container findings use FindingType.vulnerability and map to the vulnerability deduction table incidentally. A dedicated FindingType.container would allow different scoring for container-layer vs app-layer vulns."
+    },
+    {
+      "id": "D-851",
+      "tier": "P4",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: diminishing-returns counter resets per scan -- no design for future incremental scoring",
+      "note": "_category_finding_counts is a local defaultdict inside calculate_score() and resets on every call. If the engine ever runs incremental scoring the counter must persist across increments; there is no design for this future requirement, making incremental scoring a breaking architectural change."
+    },
+    {
+      "id": "D-852",
+      "tier": "P5",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/scorer.py",
+      "title": "Scorer: bonus cap at 100 conflates excellent repos with perfect repos making score uninterpretable",
+      "note": "overall = min(100, ...) caps at 100. A repo with one low finding scoring 99+8=100 is indistinguishable from a repo with zero findings scoring 100+8=100. Snyk shows 100 only for repos with zero findings; our ceiling conflates excellent with perfect."
+    },
+    {
+      "id": "D-853",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD sync: no scheduled NVD sync job -- we query NVD per-scan hitting rate limits",
+      "note": "nvd_scanner.py queries the NVD 2.0 API in real-time per scan. Snyk and Dependabot maintain a local mirror of NVD updated every 2 hours; real-time queries hit NVD rate limits (5 req/30s without API key) and fail silently, leaving findings unenriched."
+    },
+    {
+      "id": "D-854",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD sync: _CVE_CACHE is process-lifetime only -- cold starts lose all cached enrichment causing latency spikes",
+      "note": "_CVE_CACHE in vuln_scanner.py is a module-level dict with process-lifetime TTL. Worker restarts (Kubernetes pod recycling, Railway dyno restarts) clear the cache; the first scan after a restart re-fetches all CVE details from OSV and NVD, causing scan latency spikes and NVD rate limit hits."
+    },
+    {
+      "id": "D-855",
+      "tier": "P0",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV advisory freshness absent -- no mechanism to detect stale advisory data from OSV replication lag",
+      "note": "OSV.dev publishes new advisories continuously but replication lag can occur. vuln_scanner.py queries OSV at scan time with no freshness metadata check; Snyk advisory team manually verifies OSV freshness against NVD daily, a gap we have no equivalent for."
+    },
+    {
+      "id": "D-856",
+      "tier": "P0",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD CVE enrichment: no CVSS v4.0 support -- NVD publishing v4.0 scores since 2024",
+      "note": "_extract_cvss31() in nvd_scanner.py tries cvssMetricV31 then cvssMetricV30 only. NVD began publishing CVSS v4.0 (cvssMetricV40) in late 2024; new CVEs may have v4.0 as primary score with no v3.x fallback, causing nvd_score to return None and leaving findings unscored."
+    },
+    {
+      "id": "D-857",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: no CISA KEV integration -- KEV catalog critical for exploit prioritisation",
+      "note": "CISA publishes the Known Exploited Vulnerabilities catalog daily with CVEs under active exploitation. nvd_scanner.py enriches with CVSS score and CWE only; no CISA KEV API call, no kev_in_catalog flag on findings. Snyk and Semgrep both surface KEV status prominently."
+    },
+    {
+      "id": "D-858",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: _extract_references caps at 10 URLs -- advisory references beyond 10 silently dropped",
+      "note": "_extract_references() returns refs[:10]. NVD CVEs for major vulnerabilities (Log4Shell, Spring4Shell) have 40+ references including vendor patches and PoC links. Truncating to 10 may drop the most important vendor patch link if it appears later in the NVD reference list."
+    },
+    {
+      "id": "D-859",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV batch query: index offset bug risk when OSV returns partial results for large batches",
+      "note": "_query_batch() sends queries in batches of BATCH_SIZE=1000. If OSV returns fewer results than queries (partial response), the index offset between batch_keys and data results causes wrong pkg-to-vuln mapping, silently assigning wrong vulnerabilities to wrong packages."
+    },
+    {
+      "id": "D-860",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV enrichment: no GitHub Advisory API call -- GHSA descriptions are truncated OSV summaries",
+      "note": "vuln_scanner.py fetches OSV vulnerability detail via OSV_VULN_URL/{vid}. For GHSA-prefixed advisories, the full text and affected versions are richer in the GitHub Advisory API than in OSV mirror. We never call the GitHub Advisories API; GHSA descriptions are truncated OSV summaries."
+    },
+    {
+      "id": "D-861",
+      "tier": "P1",
+      "agent": "dario",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV freshness: no advisory withdrawal detection -- withdrawn CVEs remain as active findings",
+      "note": "CVEs are occasionally withdrawn or disputed (NVD REJECT status). vuln_scanner.py has no check for withdrawn=true in OSV data or NVD REJECT status; withdrawn CVEs continue to appear in scan reports as valid findings."
+    },
+    {
+      "id": "D-862",
+      "tier": "P1",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD rate limit: no API key rotation pool -- single key shared across all concurrent scans hits 50 req/30s limit",
+      "note": "_CONCURRENCY is set to 50 based on NVD_API_KEY presence with no API key rotation. A burst of 10 simultaneous scans each fetching 20 CVEs hits 200 NVD requests in less than 30s, triggering 403s that fail silently and leave findings unenriched."
+    },
+    {
+      "id": "D-863",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: no CPE matching -- we match by CVE ID only missing CPE-based vulnerability scope",
+      "note": "NVD CVE records include CPE (Common Platform Enumeration) applicability statements defining exactly which product versions are affected. nvd_scanner.py extracts CVSS and CWE but ignores the CPE nodes; we cannot verify whether a specific package version is within the CPE applicability range."
+    },
+    {
+      "id": "D-864",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV version range: wildcard version sent to OSV returns all vulns for that package inflating count",
+      "note": "_query_batch() sends query without version key if dep version == wildcard. OSV returns all vulnerabilities for the package regardless of version. For requirements.txt lines with no pinned version, every CVE for that package is reported, artificially inflating finding count."
+    },
+    {
+      "id": "D-865",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV detail fetch: no pagination check -- OSV batch results may be paginated and only first page processed",
+      "note": "_query_batch() iterates data.get(results) without checking for a nextPageToken. If OSV returns paginated batch results (possible for repos with many deps), only the first page is processed; deps in subsequent pages get no vulnerability scan."
+    },
+    {
+      "id": "D-866",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD search: search_nvd() is dead code -- proactive NVD keyword searches never executed in pipeline",
+      "note": "search_nvd() is defined in nvd_scanner.py but is not called from pipeline.py or vuln_scanner.py. Proactive NVD keyword searches for packages without OSV entries (common for emerging ecosystems) are never executed."
+    },
+    {
+      "id": "D-867",
+      "tier": "P2",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV ecosystem mapping: NuGet and Swift absent from _ECO_MAP -- C# and iOS deps silently skipped",
+      "note": "_ECO_MAP in vuln_scanner.py covers npm, PyPI, Go, crates.io, Maven, RubyGems, Packagist. NuGet (C#/.NET) and SwiftPM are not mapped; dependencies from these ecosystems are skipped in _query_batch() with no warning, silently producing zero vulnerability findings."
+    },
+    {
+      "id": "D-868",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: no CWE hierarchy traversal -- child CWEs not mapped to CWE Top 25 parent categories",
+      "note": "_extract_cwes() returns raw CWE IDs from NVD. CWE-89 (SQL Injection) is a child of CWE-943. Without CWE hierarchy traversal, compliance reports that require mapping to CWE Top 25 parent categories are incomplete."
+    },
+    {
+      "id": "D-869",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV fix version: _extract_fix_version returns first fixed event -- may return wrong ecosystem version",
+      "note": "_extract_fix_version() returns the first fixed value found. For packages affected by the same CVE in multiple ecosystems (npm and PyPI variants), the function may return the fix version from the wrong ecosystem affected entry."
+    },
+    {
+      "id": "D-870",
+      "tier": "P3",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: BASE_BACKOFF 2s with MAX_RETRIES 3 exhausted in 14s -- insufficient for NVD 503 windows",
+      "note": "_get_with_retry() backs off 2s, 4s, 8s for a maximum 14s total wait. NVD has documented maintenance windows of 30-60 minutes during which it returns 503. The retry budget is exhausted in 14s; all CVE enrichment fails silently during NVD maintenance."
+    },
+    {
+      "id": "D-871",
+      "tier": "P4",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/vuln_scanner.py",
+      "title": "OSV query: no ETag/Last-Modified caching -- we re-fetch vuln details we already have on every scan",
+      "note": "_get_with_retry() sends bare GET requests with no If-None-Match or If-Modified-Since headers. OSV supports HTTP caching headers; sending ETags would allow 304 Not Modified responses and eliminate redundant data transfer for unchanged vulnerability records."
+    },
+    {
+      "id": "D-872",
+      "tier": "P4",
+      "agent": "andrej",
+      "status": "open",
+      "file": "app/engine/nvd_scanner.py",
+      "title": "NVD enrichment: _WINDOW_SECONDS same for keyed and unkeyed -- keyed path sleeps 10x longer than necessary",
+      "note": "_WINDOW_SECONDS = 6.0 for both keyed and unkeyed requests. With API key: 50 req/30s means 1 req per 0.6s; with no key: 5 req/30s means 1 req per 6s. Setting _WINDOW_SECONDS to 6.0 for both means the keyed path sleeps 10x longer than necessary, reducing NVD enrichment throughput by 10x when an API key is present."
     }
   ]
 }
