@@ -163,8 +163,8 @@
       "tier": "P1",
       "title": "ToS + Privacy Policy Pages",
       "agent": "thariq",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:47:37Z",
       "file": "zaphscore-landing/",
       "note": "Live product with no ToS or Privacy Policy. Legal exposure. Need /terms and /privacy."
     },
@@ -413,8 +413,8 @@
       "tier": "P4",
       "title": "Pricing Page",
       "agent": "thariq",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:47:37Z",
       "file": "zaphscore-landing/pricing.html",
       "note": "No dedicated pricing page. Stripe payment links exist but no conversion page."
     },
@@ -493,8 +493,8 @@
       "tier": "P5",
       "title": "Status Page",
       "agent": "elena",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:47:37Z",
       "file": "status.zaphscore.zaphenath.app",
       "note": "No status page. When API is down users have no info. Blocks enterprise trust."
     },
