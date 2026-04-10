@@ -2,86 +2,87 @@
   "mission": "WAR-2 ZaphNews Shift",
   "agent": "ZaphLabs WAR-2",
   "created_at": "2026-04-10T00:00:00Z",
+  "completed_at": "2026-04-10T02:00:00Z",
   "items": [
     {
       "id": "ZN-001",
       "priority": "P0",
       "title": "ZaphNews Index Page",
       "description": "Create zaphscore-landing/zaphnews/index.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:00:00Z"
     },
     {
       "id": "ZN-002",
       "priority": "P0",
       "title": "Glasswing Article",
       "description": "Create zaphscore-landing/zaphnews/glasswing.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:05:00Z"
     },
     {
       "id": "ZN-003",
       "priority": "P0",
       "title": "RSS Feed",
       "description": "Create zaphscore-landing/zaphnews/feed.xml",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:10:00Z"
     },
     {
       "id": "ZN-004",
       "priority": "P1",
       "title": "Newsletter Subscribe API",
       "description": "Create app/api/newsletter.py",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:15:00Z"
     },
     {
       "id": "ZN-005",
       "priority": "P1",
       "title": "EU AI Act Article",
       "description": "Create zaphscore-landing/zaphnews/eu-ai-act.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:20:00Z"
     },
     {
       "id": "ZN-006",
       "priority": "P2",
       "title": "Article Template",
       "description": "Create zaphscore-landing/zaphnews/article-template.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:25:00Z"
     },
     {
       "id": "ZN-007",
       "priority": "P2",
       "title": "FearScore Opinion Piece",
       "description": "Create zaphscore-landing/zaphnews/fearscore.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:30:00Z"
     },
     {
       "id": "ZN-008",
       "priority": "P2",
       "title": "Sitemap XML",
       "description": "Create zaphscore-landing/zaphnews/sitemap.xml",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:35:00Z"
     },
     {
       "id": "ZN-009",
       "priority": "P3",
       "title": "Top 10 AI Security Mistakes",
       "description": "Create zaphscore-landing/zaphnews/top10-mistakes.html",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:40:00Z"
     },
     {
       "id": "ZN-010",
       "priority": "P3",
       "title": "OG Image Generator Script",
       "description": "Create scripts/zaphnews_og_generator.py",
-      "status": "pending",
-      "fixed_at": null
+      "status": "done",
+      "fixed_at": "2026-04-10T01:45:00Z"
     }
   ]
 }
