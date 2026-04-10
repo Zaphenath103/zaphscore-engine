@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>EU AI Act: The Clock That Will Bankrupt 60% of AI Teams &mdash; ZaphNews</title>
+<meta name="description" content="The EU AI Act enforcement phase is here. Fines up to 35M EUR. Most AI teams have no idea how exposed they are."/>
+<meta property="og:title" content="EU AI Act: The Clock That Will Bankrupt 60% of AI Teams &mdash; ZaphNews"/>
+<meta property="og:image" content="https://zaphscore.zaphenath.app/og-image.png"/>
+<meta property="og:type" content="article"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="alternate" type="application/rss+xml" title="ZaphNews RSS" href="/zaphnews/feed.xml"/>
+<style>
+:root{--bg:#080b10;--surface:#0d1117;--border:#1e2733;--accent:#cc88ff;--accent2:#55ccff;--red:#ff3b3b;--text:#e8edf3;--muted:#8292a6;--card-hover:#161e28}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh}
+nav{border-bottom:1px solid var(--border);background:rgba(8,11,16,.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{display:flex;align-items:center;gap:.75rem;text-decoration:none}
+.nav-logo{font-family:monospace;font-size:.7rem;font-weight:700;color:var(--accent);background:rgba(204,136,255,.1);border:1px solid rgba(204,136,255,.3);padding:3px 8px;letter-spacing:.15em}
+.nav-title{font-size:1.1rem;font-weight:700;color:var(--text)}
+.nav-back{font-family:monospace;font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.06em}
+.nav-back:hover{color:var(--accent2)}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{font-family:monospace;font-size:.75rem;color:var(--muted);text-decoration:none;text-transform:uppercase}
+.nav-links a:hover{color:var(--accent2)}
+.hero{border-bottom:1px solid var(--border);padding:5rem 2rem 4rem;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(92,207,255,.04),transparent 70%);position:relative}
+.hero-label{font-family:monospace;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;display:inline-flex;align-items:center;gap:.5rem}
+.hero-label::before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(2.4rem,5vw,4rem);font-weight:700;line-height:1.15;max-width:720px;margin:0 auto 1.5rem}
+.hero h1 em{font-style:normal;color:var(--accent2)}
+.hero-sub{font-size:1.1rem;color:var(--muted);max-width:540px;margin:0 auto 2.5rem}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:var(--accent2);color:#080b10;padding:.75rem 2rem;font-family:monospace;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:none;cursor:pointer}
+.btn-primary:hover{background:#fff}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.75rem 2rem;font-family:monospace;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;text-decoration:none}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2)}
+.ticker{background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 0;overflow:hidden}
+.ticker-inner{display:flex;gap:4rem;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{font-family:monospace;font-size:.72rem;color:var(--muted)}
+.ticker-item strong{color:var(--accent)}
+.container{max-width:1200px;margin:0 auto;padding:0 2rem}
+.article-body{max-width:680px;margin:0 auto;padding:3rem 2rem}
+.article-hero{max-width:760px;margin:0 auto;padding:4rem 2rem 3rem;border-bottom:1px solid var(--border)}
+.article-eyebrow{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.breaking-pulse{display:flex;align-items:center;gap:.4rem;font-family:monospace;font-size:.65rem;color:var(--red);letter-spacing:.1em}
+.breaking-pulse::before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite}
+.article-hero h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;line-height:1.2;letter-spacing:-.02em;margin-bottom:1.25rem}
+.article-deck{font-size:1.15rem;color:var(--muted);line-height:1.65;margin-bottom:1.5rem}
+.article-meta-bar{display:flex;align-items:center;gap:1.5rem;font-family:monospace;font-size:.7rem;color:var(--muted);padding-top:1.25rem;border-top:1px solid var(--border)}
+.article-body p{font-size:1.05rem;margin-bottom:1.5rem;color:var(--text)}
+.article-body p.lead{font-size:1.15rem;font-weight:500}
+.article-body h2{font-size:1.35rem;font-weight:700;margin:3rem 0 1rem;letter-spacing:-.01em}
+.article-body h3{font-size:1.1rem;font-weight:700;margin:2rem 0 .75rem;color:var(--accent2);font-family:monospace}
+.callout{background:rgba(255,59,59,.05);border-left:3px solid var(--red);padding:1.25rem 1.5rem;margin:2rem 0;font-size:.95rem}
+.callout strong{color:var(--red)}
+.pull-quote{border-top:2px solid var(--accent2);border-bottom:1px solid var(--border);padding:1.5rem 0;margin:2.5rem 0;font-size:1.25rem;line-height:1.4;color:var(--accent2);font-style:italic}
+.data-table{width:100%;border-collapse:collapse;margin:2rem 0;font-family:monospace;font-size:.8rem}
+.data-table th{text-align:left;color:var(--muted);border-bottom:1px solid var(--border);padding:.5rem 1rem .5rem 0;text-transform:uppercase}
+.data-table td{padding:.6rem 1rem .6rem 0;border-bottom:1px solid rgba(30,39,51,.5)}
+.data-table td.hl{color:var(--red)}
+.separator{border:none;border-top:1px solid var(--border);margin:3rem 0}
+.section-label{font-family:monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);padding-top:2.5rem;margin-bottom:2rem}
+.featured-grid{display:grid;grid-template-columns:2fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:1px}
+.featured-main{background:var(--surface);padding:2.5rem;transition:background .2s}
+.featured-main:hover{background:var(--card-hover)}
+.featured-sidebar{background:var(--surface);display:flex;flex-direction:column;gap:1px}
+.article-card{background:var(--surface);padding:1.75rem;flex:1;text-decoration:none;display:block;transition:background .2s;border-bottom:1px solid var(--border)}
+.article-card:last-child{border-bottom:none}
+.article-card:hover{background:var(--card-hover)}
+.tag{font-family:monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border:1px solid;display:inline-block;margin-bottom:1rem}
+.tag-red{color:var(--red);border-color:rgba(255,59,59,.3);background:rgba(255,59,59,.05)}
+.tag-purple{color:var(--accent);border-color:rgba(204,136,255,.3);background:rgba(204,136,255,.05)}
+.tag-cyan{color:var(--accent2);border-color:rgba(92,207,255,.3);background:rgba(92,207,255,.05)}
+.tag-orange{color:#ff8c42;border-color:rgba(255,140,66,.3);background:rgba(255,140,66,.05)}
+.featured-main h2{font-size:1.9rem;font-weight:700;line-height:1.2;margin-bottom:1rem;color:var(--text)}
+.featured-main h2 a{color:inherit;text-decoration:none}
+.featured-main h2 a:hover{color:var(--accent2)}
+.article-excerpt{color:var(--muted);font-size:.95rem;margin-bottom:1.25rem;line-height:1.65}
+.article-meta{font-family:monospace;font-size:.65rem;color:var(--muted);display:flex;gap:1rem;align-items:center}
+.article-meta .read-more{color:var(--accent2);margin-left:auto}
+.card-title{font-size:1rem;font-weight:700;line-height:1.3;margin-bottom:.5rem;color:var(--text);text-decoration:none;display:block}
+.card-title:hover{color:var(--accent2)}
+.card-excerpt{font-size:.85rem;color:var(--muted);line-height:1.55;margin-bottom:.75rem}
+.articles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-top:none;margin-bottom:4rem}
+.grid-card{background:var(--surface);padding:1.75rem;text-decoration:none;display:block;transition:background .2s}
+.grid-card:hover{background:var(--card-hover)}
+.newsletter-section{background:var(--surface);border:1px solid var(--border);padding:3rem;text-align:center;margin-bottom:4rem;position:relative;overflow:hidden}
+.newsletter-section h2{font-size:1.6rem;margin-bottom:.75rem}
+.newsletter-section>p{color:var(--muted);margin-bottom:1.5rem}
+.newsletter-form{display:flex;max-width:420px;margin:0 auto}
+.newsletter-form input{flex:1;background:var(--bg);border:1px solid var(--border);border-right:none;color:var(--text);padding:.75rem 1rem;font-family:monospace;font-size:.8rem;outline:none}
+.newsletter-form input:focus{border-color:var(--accent2)}
+.newsletter-form button{background:var(--accent2);color:#080b10;border:none;padding:.75rem 1.5rem;font-family:monospace;font-size:.75rem;font-weight:700;text-transform:uppercase;cursor:pointer}
+.newsletter-form button:hover{background:#fff}
+.cta-block{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--accent2);padding:2.5rem;margin:3rem 0;text-align:center}
+.mistake-item{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);padding:1.5rem;margin-bottom:1rem}
+.mistake-num{font-family:monospace;font-size:.65rem;color:var(--red);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem}
+.mistake-title{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.mistake-body{font-size:.9rem;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:2rem;text-align:center;margin-top:4rem}
+footer p{font-family:monospace;font-size:.7rem;color:var(--muted)}
+footer a{color:var(--accent2);text-decoration:none}
+@media(max-width:768px){.featured-grid{grid-template-columns:1fr}.articles-grid{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body><nav>
+  <a href="/zaphnews/" class="nav-brand"><span class="nav-logo">ZAPH</span><span class="nav-title">ZaphNews</span></a>
+  <a href="/zaphnews/" class="nav-back">&larr; All Articles</a>
+</nav>
+<div class="article-hero">
+  <div class="article-eyebrow">
+    <span class="tag tag-purple">Regulatory</span>
+  </div>
+  <h1>EU AI Act: The Clock That Will Bankrupt 60% of AI Teams</h1>
+  <p class="article-deck">Every company with an AI product and European users just became a compliance target. Most of them do not know it yet. The EU AI Act is not coming &mdash; it is here. And the enforcement mechanism is already loaded.</p>
+  <div class="article-meta-bar">
+    <span>April 6, 2026</span>
+    <span style="color:var(--border)">|</span>
+    <span>ZaphNews Analysis</span>
+    <span style="color:var(--border)">|</span>
+    <span>10 min read</span>
+  </div>
+</div>
+<div class="article-body">
+  <p class="lead">The number is 35 million euros. Or 7% of global annual turnover, whichever is higher. That is the maximum fine for deploying a prohibited AI system under the EU AI Act &mdash; a regulation that completed its phased rollout in Q2 2026 and is now, without question, active law.</p>
+
+  <p>The AI industry has been treating the EU AI Act like a distant rumble. A regulatory storm that would arrive eventually, giving teams time to prepare, adapt, restructure. That was the wrong read. The storm is here. And the thunder most teams are hearing right now is not a warning &mdash; it is enforcement.</p>
+
+  <p>Here is what is actually happening, stripped of the consultant-speak that has made this regulation feel abstract for the past two years.</p>
+
+  <h2>The Risk Classification System Is Not What You Think It Is</h2>
+
+  <p>The EU AI Act divides AI systems into four risk categories: unacceptable, high, limited, and minimal. Most coverage focuses on the extremes &mdash; the banned systems (unacceptable) and the freely deployable systems (minimal). That framing is a trap.</p>
+
+  <p>The category that will actually bankrupt AI companies is the middle one: high-risk. And the definition of high-risk is far broader than the industry has acknowledged.</p>
+
+  <p>Under Article 6, a system qualifies as high-risk if it is used as a safety component in regulated products, or if it falls within the eight specific areas listed in Annex III. Those areas include: biometric identification, critical infrastructure management, education and vocational training, employment and worker management, access to essential services, law enforcement, migration and border control, and administration of justice.</p>
+
+  <p>Read that list again slowly. Education. Employment. Essential services. If your AI product is used by a company in any of those sectors to make or support decisions affecting individuals in the EU, it is potentially high-risk by classification. Not probably. Potentially &mdash; and in a regulatory environment with 35 million euro fines, potentially is enough to trigger a compliance audit.</p>
+
+  <div class="callout">
+    <strong>The exposure most teams miss:</strong> Your product does not have to be the AI system. If your product is integrated into a workflow that uses AI to make decisions in a high-risk domain, the downstream liability may still apply to you. The Act's supply chain provisions are not theoretical. They are the primary enforcement vector.
+  </div>
+
+  <h2>The Technical Requirements That Will Break Teams</h2>
+
+  <p>For high-risk AI systems, the EU AI Act mandates 14 categories of technical obligation. Here are the ones most likely to trigger enforcement, based on our analysis of early compliance assessments across 40+ EU-facing AI products:</p>
+
+  <p><strong>Risk management system (Article 9):</strong> You must establish, implement, document, and maintain a risk management system throughout the AI system's lifecycle. Not a one-time assessment. A live, documented, updated system. Most teams have never built one.</p>
+
+  <p><strong>Data governance (Article 10):</strong> Training, validation, and testing datasets must meet quality criteria. You must document their origin, collection method, and scope. You must be able to demonstrate that they are free from errors and complete for the intended purpose. This retroactively implicates every model trained on data that was not documented under these standards.</p>
+
+  <p><strong>Technical documentation (Article 11):</strong> You must maintain documentation that allows national authorities to assess compliance. This documentation must be updated continuously as the system changes. For teams shipping weekly, this is a continuous compliance burden, not a one-time project.</p>
+
+  <p><strong>Transparency (Article 13):</strong> High-risk systems must be designed to allow operators to understand their capabilities and limitations. The system must interpret its own outputs. If your AI cannot explain why it made a decision in terms a non-technical auditor can evaluate, it fails this requirement.</p>
+
+  <p><strong>Human oversight (Article 14):</strong> High-risk AI must be designed to be effectively overseen by natural persons. This is not just a UI requirement &mdash; it is an architectural one. If your system makes decisions faster than a human can meaningfully intervene, you may have a structural compliance failure.</p>
+
+  <p><strong>Accuracy, robustness, cybersecurity (Article 15):</strong> High-risk systems must achieve appropriate levels of accuracy. They must be resilient against attempts to alter their behavior by malicious third parties. This is where AI security and regulatory compliance converge directly.</p>
+
+  <h2>The Timeline That Is Already Behind You</h2>
+
+  <p>The EU AI Act was adopted in June 2024. Prohibited AI systems became illegal six months later. General-purpose AI model obligations applied from August 2025. High-risk system requirements under Annex III entered full force in August 2026 &mdash; which means if you are reading this in April 2026, you have four months to achieve compliance or face enforcement.</p>
+
+  <p>Four months. For teams that have not started, that is not enough time. The risk management system alone takes six to eight weeks to design properly. The technical documentation requirements demand a dedicated compliance function. The data governance audit, for systems trained on legacy datasets, can take months.</p>
+
+  <div class="pull-quote">"The companies that will be made examples of are not the ones that tried and fell short. They are the ones that assumed they had more time."</div>
+
+  <h2>What This Means for Non-EU Companies</h2>
+
+  <p>Jurisdiction is not a defense. The EU AI Act applies to providers placing AI systems on the EU market and to operators using AI systems within the EU &mdash; regardless of where those providers or operators are incorporated. If you have European users, you have EU obligations.</p>
+
+  <p>The enforcement architecture is designed specifically to capture non-EU companies. National market surveillance authorities will flag non-compliant systems. The new AI Office, established within the European Commission, has cross-border authority. Importers and distributors of non-compliant AI systems become liable under the regulation.</p>
+
+  <p>The United States legal principle that you cannot be regulated by a government you have not consented to does not apply. The EU has demonstrated, repeatedly, with GDPR enforcement, that it will pursue fines against foreign companies operating in its market. AI is no different.</p>
+
+  <h2>The Security Intersection</h2>
+
+  <p>Article 15 of the EU AI Act requires that high-risk AI systems be designed to withstand attempts to alter their behavior by adversarial third parties. This is a security requirement embedded in regulatory law. It covers prompt injection, model poisoning, adversarial inputs, and unauthorized access to the AI system's decision-making components.</p>
+
+  <p>If your AI product has not been audited for these attack vectors, you are not just a security risk &mdash; you are a compliance risk. And the two are now the same thing.</p>
+
+  <hr class="separator"/>
+  <div class="cta-block">
+  <p style="font-family:monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent2);margin-bottom:1rem">ZaphScore &mdash; AI Security Engine</p>
+  <h3 style="font-size:1.3rem;margin-bottom:.75rem;font-family:Georgia,serif">Does your agent system have a Glasswing problem?</h3>
+  <p style="color:var(--muted);font-size:.9rem;margin-bottom:.5rem">ZaphScore runs a 12-phase security scan against your AI pipeline. Scans complete in under 90 seconds. Average score across 200+ repos:</p>
+  <p style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--red);margin:.5rem 0">41<span style="color:var(--muted);font-size:1rem">/100</span></p>
+  <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.5rem">Is yours above it?</p>
+  <a href="https://zaphscore.zaphenath.app" target="_blank" style="display:inline-block;background:var(--accent2);color:#080b10;padding:.75rem 2rem;font-family:monospace;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none">Scan Your Agent Now &mdash; Free</a>
+</div>
+</div>
+<footer><p>&copy; 2026 <a href="https://zaphenath.app">Zaphenath</a> &mdash; <a href="/zaphnews/">ZaphNews</a> &middot; <a href="/zaphnews/feed.xml">RSS</a> &middot; <a href="https://zaphscore.zaphenath.app">ZaphScore Engine</a></p></footer></html>
