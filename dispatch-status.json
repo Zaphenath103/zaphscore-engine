@@ -463,8 +463,8 @@
       "tier": "P5",
       "title": "GitHub Badge + README",
       "agent": "andrej",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:42:00Z",
       "file": "README.md",
       "note": "No README in zaphscore-engine. No GitHub badge. Looks unmaintained to technical evaluators."
     },
