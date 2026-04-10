@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Docs — ZaphScore</title>
+<meta name="description" content="ZaphScore REST API documentation. Submit scans, get scores, export PDF reports.">
+<style>
+  :root { --bg: #0a0a0f; --surface: #111118; --surface2: #16161f; --border: #1e1e2e; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; --green: #4ade80; --yellow: #fbbf24; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; display: flex; }
+  .sidebar { width: 240px; min-height: 100vh; border-right: 1px solid var(--border); padding: 32px 24px; position: fixed; overflow-y: auto; }
+  .logo { font-size: 1.1rem; font-weight: 700; color: var(--accent); text-decoration: none; display: block; margin-bottom: 32px; }
+  .nav-section { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 24px 0 8px; }
+  .nav-link { display: block; padding: 6px 0; font-size: 0.85rem; color: var(--muted); text-decoration: none; }
+  .nav-link:hover, .nav-link.active { color: var(--text); }
+  .main { margin-left: 240px; padding: 60px 48px; max-width: 900px; }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 12px; }
+  .lead { color: var(--muted); font-size: 1rem; margin-bottom: 48px; line-height: 1.6; }
+  h2 { font-size: 1.25rem; font-weight: 700; margin: 60px 0 16px; padding-top: 60px; border-top: 1px solid var(--border); }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 32px 0 12px; }
+  p { color: #94a3b8; line-height: 1.7; margin-bottom: 16px; font-size: 0.9rem; }
+  .endpoint { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; }
+  .method { font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
+  .method.post { background: rgba(99,102,241,0.15); color: var(--accent); }
+  .method.get { background: rgba(74,222,128,0.1); color: var(--green); }
+  .method.delete { background: rgba(248,113,113,0.1); color: #f87171; }
+  .path { font-family: monospace; font-size: 0.875rem; }
+  pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; font-size: 0.8rem; margin: 12px 0 24px; line-height: 1.6; }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .param-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.85rem; }
+  .param-table th { text-align: left; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  .param-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .param-table td:first-child { font-family: monospace; font-size: 0.8rem; color: var(--accent); }
+  .param-table td:nth-child(2) { color: var(--yellow); font-family: monospace; font-size: 0.75rem; }
+  .required { color: #f87171; font-size: 0.7rem; font-weight: 600; margin-left: 4px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+  .badge.auth { background: rgba(99,102,241,0.15); color: var(--accent); }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <a href="/" class="logo">ZaphScore</a>
+  <div class="nav-section">Overview</div>
+  <a href="#auth" class="nav-link">Authentication</a>
+  <a href="#errors" class="nav-link">Errors</a>
+  <a href="#ratelimits" class="nav-link">Rate Limits</a>
+  <div class="nav-section">Endpoints</div>
+  <a href="#submit-scan" class="nav-link">Submit Scan</a>
+  <a href="#get-scan" class="nav-link">Get Scan</a>
+  <a href="#list-scans" class="nav-link">List Scans</a>
+  <a href="#pdf-report" class="nav-link">PDF Report</a>
+  <a href="#delete-user" class="nav-link">Delete Account</a>
+</nav>
+
+<div class="main">
+  <h1>ZaphScore API</h1>
+  <p class="lead">REST API for submitting repository scans, retrieving scores, and exporting reports. Base URL: <code>https://zaphscore.zaphenath.app</code></p>
+
+  <h2 id="auth">Authentication</h2>
+  <p>All endpoints except <code>GET /ping</code> require a Supabase JWT in the Authorization header.</p>
+  <pre><code>Authorization: Bearer YOUR_SUPABASE_JWT</code></pre>
+  <p>Get your JWT by signing in via the dashboard or the Supabase JS client. Tokens expire after 1 hour.</p>
+
+  <h2 id="errors">Errors</h2>
+  <table class="param-table">
+    <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>401</td><td>Missing or invalid JWT</td></tr>
+      <tr><td>404</td><td>Scan not found</td></tr>
+      <tr><td>400</td><td>Invalid request body or scan not complete</td></tr>
+      <tr><td>429</td><td>Rate limit exceeded</td></tr>
+      <tr><td>500</td><td>Internal error — contact support</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="ratelimits">Rate Limits</h2>
+  <p>Free: 3 scans total. Pro: 1,000 API requests/day. Enterprise: unlimited. Rate limit headers returned on every response: <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>.</p>
+
+  <h2 id="submit-scan">Submit a Scan</h2>
+  <div class="endpoint">
+    <span class="method post">POST</span>
+    <span class="path">/api/scans</span>
+    <span class="badge auth">Auth required</span>
+  </div>
+  <p>Submit a repository URL for scanning. Returns immediately with a scan ID. Poll <code>GET /api/scans/{id}</code> for results.</p>
+  <h3>Request body</h3>
+  <table class="param-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>repo_url<span class="required">required</span></td><td>string</td><td>GitHub repository URL. Public repos only unless github_token provided.</td></tr>
+      <tr><td>github_token</td><td>string</td><td>GitHub PAT for private repo access. Used only for this scan, never stored.</td></tr>
+    </tbody>
+  </table>
+  <pre><code>curl -X POST https://zaphscore.zaphenath.app/api/scans \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"repo_url": "https://github.com/your-org/your-agent"}'</code></pre>
+  <h3>Response</h3>
+  <pre><code>{
+  "id": "scan_abc123",
+  "status": "queued",
+  "repo_url": "https://github.com/your-org/your-agent",
+  "created_at": "2026-04-10T08:00:00Z"
+}</code></pre>
+
+  <h2 id="get-scan">Get Scan Results</h2>
+  <div class="endpoint">
+    <span class="method get">GET</span>
+    <span class="path">/api/scans/{scan_id}</span>
+    <span class="badge auth">Auth required</span>
+  </div>
+  <p>Poll until <code>status</code> is <code>complete</code> or <code>failed</code>. Typical scan time: 30–90 seconds.</p>
+  <pre><code>{
+  "id": "scan_abc123",
+  "status": "complete",
+  "score": 74.3,
+  "grade": "C",
+  "repo_url": "https://github.com/your-org/your-agent",
+  "breakdown": {
+    "secrets": { "score": 85, "weight": 0.25, "findings": 1 },
+    "dependencies": { "score": 60, "weight": 0.20, "findings": 8 },
+    "sast": { "score": 90, "weight": 0.20, "findings": 0 },
+    "iac": { "score": 70, "weight": 0.15, "findings": 2 },
+    "licenses": { "score": 80, "weight": 0.10, "findings": 1 },
+    "sbom": { "score": 55, "weight": 0.05, "findings": 3 },
+    "containers": { "score": 65, "weight": 0.05, "findings": 2 }
+  },
+  "completed_at": "2026-04-10T08:01:23Z"
+}</code></pre>
+
+  <h2 id="list-scans">List Scans</h2>
+  <div class="endpoint">
+    <span class="method get">GET</span>
+    <span class="path">/api/scans</span>
+    <span class="badge auth">Auth required</span>
+  </div>
+  <p>Returns all scans for the authenticated user, newest first. Supports <code>?limit=20&amp;offset=0</code>.</p>
+
+  <h2 id="pdf-report">Export PDF Report</h2>
+  <div class="endpoint">
+    <span class="method get">GET</span>
+    <span class="path">/api/scans/{scan_id}/report.pdf</span>
+    <span class="badge auth">Auth required</span>
+  </div>
+  <p>Returns a PDF with executive summary, score breakdown table, and full findings list. Scan must be complete. Pro and Enterprise only.</p>
+  <pre><code>curl -O report.pdf \
+  -H "Authorization: Bearer $JWT" \
+  https://zaphscore.zaphenath.app/api/scans/scan_abc123/report.pdf</code></pre>
+
+  <h2 id="delete-user">Delete Account</h2>
+  <div class="endpoint">
+    <span class="method delete">DELETE</span>
+    <span class="path">/api/user/me</span>
+    <span class="badge auth">Auth required</span>
+  </div>
+  <p>Permanently deletes your account and all associated scans and findings. GDPR Article 17 compliant. Irreversible.</p>
+  <pre><code>{
+  "deleted": true,
+  "scans_deleted": 47
+}</code></pre>
+</div>
+</body>
+</html>

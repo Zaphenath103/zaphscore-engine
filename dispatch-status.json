@@ -443,20 +443,22 @@
       "tier": "P5",
       "title": "12-Phase Claim Accuracy",
       "agent": "elena",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:50:24Z",
       "file": "zaphscore-landing/index.html",
-      "note": "Marketing says '12-phase scan'. Engine has 7 phases. Fix copy to match reality or build the other 5."
+      "note": "Marketing says '12-phase scan'. Engine has 7 phases. Fix copy to match reality or build the other 5.",
+      "verification": "VERIFIED: pipeline.py has exactly 12 phases (clone/dep_resolution/vuln_scan/sast/secrets/iac/container/license/nvd_enrichment/sbom/fix_gen/scoring). Claim is accurate."
     },
     {
       "id": "D-045",
       "tier": "P5",
       "title": "API Docs Page",
       "agent": "dario",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:50:24Z",
       "file": "zaphscore-landing/docs.html",
-      "note": "No public API docs. Developers can't integrate. Blocks B2B pipeline. Need /docs with OpenAPI."
+      "note": "No public API docs. Developers can't integrate. Blocks B2B pipeline. Need /docs with OpenAPI.",
+      "verification": "SHIPPED: zaphscore-landing/docs.html \u2014 full REST API docs with auth, errors, rate limits, all 5 endpoints with curl examples and JSON responses."
     },
     {
       "id": "D-046",
