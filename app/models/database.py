@@ -355,3 +355,84 @@ async def claim_next_job() -> Optional[dict[str, Any]]:
             )
     logger.info("Worker claimed scan %s", scan_id)
     return _row_to_dict(row)
+
+
+# ---------------------------------------------------------------------------
+# D-718: SOC2 Audit Log DB helpers (INSERT-only -- no UPDATE or DELETE)
+# ---------------------------------------------------------------------------
+
+async def insert_audit_record(record: dict) -> None:
+    """D-718: Append an immutable record to the SOC2 audit log."""
+    import json as _json
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO audit_log
+                (id, action, actor_id, actor_email, resource_type, resource_id,
+                 client_ip, metadata, chain_hash, created_at)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10)
+            """,
+            record["id"], record["action"], record.get("actor_id"),
+            record.get("actor_email"), record["resource_type"], record["resource_id"],
+            record["client_ip"], _json.dumps(record.get("metadata", {})),
+            record["chain_hash"], record["created_at"],
+        )
+
+
+async def get_latest_audit_record(resource_id: str) -> dict | None:
+    """D-718: Fetch the most recent audit record for a resource (for chain hash)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT chain_hash
+            FROM audit_log
+            WHERE resource_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            resource_id,
+        )
+        return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# D-722: Suppression Log DB helpers (INSERT-only)
+# ---------------------------------------------------------------------------
+
+async def insert_suppression_record(record: dict) -> None:
+    """D-722: Append an immutable finding suppression record."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO suppression_log
+                (id, finding_id, scan_id, actor_id, actor_email, reason,
+                 justification, client_ip, chain_hash, created_at, expires_at)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            """,
+            record["id"], record["finding_id"], record["scan_id"],
+            record["actor_id"], record["actor_email"], record["reason"],
+            record["justification"], record["client_ip"], record["chain_hash"],
+            record["created_at"], record.get("expires_at"),
+        )
+
+
+async def get_latest_suppression_record(finding_id: str) -> dict | None:
+    """D-722: Fetch the most recent suppression record for a finding (for chain hash)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT chain_hash
+            FROM suppression_log
+            WHERE finding_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            finding_id,
+        )
+        return dict(row) if row else None

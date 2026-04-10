@@ -17,6 +17,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from starlette.responses import StreamingResponse
 
 from app.api.deps import CurrentUser
+from app.services.audit_log import AuditAction, record_audit_event
 from app.models import database as db
 from app.models.schemas import (
     Finding,
@@ -95,6 +96,18 @@ async def submit_scan(
     scan_id = await db.create_scan(repo_url=body.repo_url, branch=branch)
 
     logger.info("Scan queued: %s -> %s@%s", scan_id, body.repo_url, branch)
+
+    # D-718: record immutable SOC2 audit event for scan submission
+    import asyncio as _asyncio
+    _asyncio.create_task(record_audit_event(
+        action=AuditAction.SCAN_SUBMITTED,
+        actor_id=current_user.get("sub"),
+        actor_email=current_user.get("email"),
+        resource_type="scan",
+        resource_id=str(scan_id),
+        client_ip=client_ip,
+        metadata={"repo_url": body.repo_url, "branch": branch},
+    ))
 
     # Trigger scan immediately via BackgroundTasks — critical for Vercel serverless
     # where the background worker poll loop may not be running between requests.

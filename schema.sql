@@ -68,3 +68,50 @@ CREATE INDEX IF NOT EXISTS idx_findings_scan_id
 -- Severity distribution queries
 CREATE INDEX IF NOT EXISTS idx_findings_severity
     ON findings (scan_id, severity);
+
+-- ---------------------------------------------------------------------------
+-- D-718: SOC2 Immutable Audit Log
+-- INSERT-only table -- no UPDATE or DELETE should ever be issued.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS audit_log (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    action          TEXT NOT NULL,
+    actor_id        TEXT,
+    actor_email     TEXT,
+    resource_type   TEXT NOT NULL,
+    resource_id     TEXT NOT NULL,
+    client_ip       TEXT NOT NULL DEFAULT 'unknown',
+    metadata        JSONB NOT NULL DEFAULT '{}',
+    chain_hash      TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_resource_id
+    ON audit_log (resource_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor_id
+    ON audit_log (actor_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- D-722: SOC2 Immutable Finding Suppression Log
+-- INSERT-only table -- suppressions are never deleted, only expired.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS suppression_log (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    finding_id      TEXT NOT NULL,
+    scan_id         TEXT NOT NULL,
+    actor_id        TEXT NOT NULL,
+    actor_email     TEXT NOT NULL,
+    reason          TEXT NOT NULL,
+    justification   TEXT NOT NULL,
+    client_ip       TEXT NOT NULL DEFAULT 'unknown',
+    chain_hash      TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at      TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_suppression_log_finding_id
+    ON suppression_log (finding_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_suppression_log_actor_id
+    ON suppression_log (actor_id, created_at DESC);

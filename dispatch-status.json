@@ -782,19 +782,21 @@
       "id": "D-686",
       "tier": "P1",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/pipeline.py",
       "title": "Snyk CI/CD native fail-fast threshold absent -- pipeline has no configurable severity gate",
-      "note": "Snyk CI lets teams set severity thresholds to fail on any HIGH. pipeline.py runs all phases and returns results; no configurable fail-fast threshold that a CI step can use to break the build."
+      "note": "Added check_severity_gate() + SeverityGateError to pipeline.py; respects ZSE_FAIL_ON_SEVERITY env var. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-687",
       "tier": "P1",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/secret_scanner.py",
       "title": "Snyk Secrets validity checking absent -- we detect patterns but do not validate liveness",
-      "note": "Snyk Secrets probes detected credentials against provider APIs to confirm they are active. secret_scanner.py pattern-matches only; no liveness probe, causing false positives on rotated credentials."
+      "note": "Added check_secret_validity() with live probes for GitHub/Stripe detector types. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-688",
@@ -1070,10 +1072,11 @@
       "id": "D-718",
       "tier": "P0",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/api/scans.py",
       "title": "Snyk enterprise SOC2 audit log absent -- no immutable audit trail for scan trigger actions",
-      "note": "Snyk logs every scan trigger, finding suppression, and policy change to an immutable audit log accessible to CISO teams. scans.py has no audit log table; enterprise SOC2 auditors cannot trace who triggered a scan or suppressed a finding."
+      "note": "Created app/services/audit_log.py with SOC2 audit trail; wired into POST /api/scans via create_task. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-719",
@@ -1108,10 +1111,11 @@
       "id": "D-722",
       "tier": "P0",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/api/scans.py",
       "title": "Snyk SOC2 immutable finding suppression log absent -- suppression actions are untraceable",
-      "note": "Snyk logs every finding suppression action and policy change to an immutable audit log. scans.py has no suppression-action audit table; suppression actions are untraceable for SOC2 audit requirements."
+      "note": "Immutable suppression log with sha256 chain-hash tamper detection in audit_log.py. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-723",
@@ -1153,10 +1157,11 @@
       "id": "D-727",
       "tier": "P1",
       "agent": "dario",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/pipeline.py",
       "title": "Semgrep SARIF output absent -- we produce ZSE-internal JSON only",
-      "note": "Semgrep outputs SARIF 2.1.0 natively which GitHub Code Scanning and Azure DevOps consume directly. pipeline.py returns a ZSE Finding list; no SARIF serialiser, no native GitHub Code Scanning upload."
+      "note": "Added findings_to_sarif() to pipeline.py producing SARIF 2.1.0 with rules, results, locations. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-728",
@@ -1405,10 +1410,11 @@
       "id": "D-755",
       "tier": "P1",
       "agent": "boris",
-      "status": "open",
+      "status": "done",
       "file": "app/engine/secret_scanner.py",
       "title": "Semgrep secrets multi-rule correlation absent -- our secret scanner uses single-pattern regex only",
-      "note": "Semgrep secrets engine correlates multiple low-confidence signals (regex + entropy + context keywords) into a high-confidence finding. secret_scanner.py applies a single regex per pattern type; no multi-signal correlation."
+      "note": "Added correlate_secrets() grouping multi-detector hits on same file with elevated context. WAR-1.",
+      "fixed_at": "2026-04-10T12:00:00Z"
     },
     {
       "id": "D-756",
