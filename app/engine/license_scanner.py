@@ -733,3 +733,120 @@ def generate_license_report(inventory: list[dict]) -> dict:
         "distribution": distribution,
         "risk_items": risk_items,
     }
+
+# D-673: Expanded SPDX full-database license coverage
+_SPDX_ADDITIONAL_PERMISSIVE = {
+    "AFL-2.0", "AFL-2.1", "AFL-3.0", "Apache-1.0", "Apache-1.1",
+    "Artistic-1.0", "Artistic-2.0",
+    "BSD-1-Clause", "BSD-4-Clause",
+    "CC-BY-1.0", "CC-BY-2.0", "CC-BY-2.5", "CC-BY-3.0", "CC-BY-4.0",
+    "CNRI-Python", "curl", "EFL-2.0", "Entessa",
+    "FSFAP", "FTL", "HPND", "ICU", "IPA",
+    "JSON", "Libpng", "libtiff",
+    "MIT-0", "MIT-CMU", "MITNFA",
+    "MulanPSL-1.0", "MulanPSL-2.0",
+    "Naumen", "Net-SNMP", "NetCDF", "Nokia", "NTP",
+    "OCLC-2.0", "OFL-1.0", "OFL-1.1",
+    "OpenSSL", "PHP-3.0", "PHP-3.01", "PostgreSQL",
+    "QPL-1.0", "Ruby", "SGI-B-2.0",
+    "TCL", "Unicode-DFS-2016", "UPL-1.0",
+    "Vim", "W3C", "Watcom-1.0", "WTFPL",
+    "X11", "Xnet", "ZPL-2.0", "ZPL-2.1",
+}
+
+_SPDX_ADDITIONAL_COPYLEFT = {
+    "CECILL-2.1", "CPL-1.0",
+    "EPL-1.0", "EPL-2.0",
+    "EUPL-1.0", "EUPL-1.1",
+    "GPL-1.0", "GPL-1.0-only",
+    "LGPL-2.0", "LGPL-2.0-only",
+    "MS-PL", "MS-RL",
+    "RPSL-1.0", "SPL-1.0", "SSPL-1.0",
+}
+
+PERMISSIVE_LICENSES.update(_SPDX_ADDITIONAL_PERMISSIVE)
+COPYLEFT_LICENSES.update(_SPDX_ADDITIONAL_COPYLEFT)
+
+
+class LicensePolicy:
+    # D-674: Org-level license policy object
+    def __init__(self, allowed=None, restricted=None, forbidden=None, policy_name=None):
+        self.allowed = allowed or set()
+        self.restricted = restricted or set()
+        self.forbidden = forbidden or set()
+        self.policy_name = policy_name or "default"
+
+    @classmethod
+    def from_env(cls):
+        import os as _os
+        def _p(v): return {s.strip() for s in _os.environ.get(v, "").split(",") if s.strip()}
+        return cls(
+            allowed=_p("ZSE_LICENSE_ALLOWED"),
+            restricted=_p("ZSE_LICENSE_RESTRICTED"),
+            forbidden=_p("ZSE_LICENSE_FORBIDDEN"),
+            policy_name=_os.environ.get("ZSE_LICENSE_POLICY_NAME", "default"),
+        )
+
+    @classmethod
+    def default_enterprise(cls):
+        return cls(
+            allowed=set(PERMISSIVE_LICENSES),
+            restricted={
+                "LGPL-2.1","LGPL-2.1-only","LGPL-2.1-or-later",
+                "LGPL-3.0","LGPL-3.0-only","LGPL-3.0-or-later",
+                "MPL-2.0","EPL-1.0","EPL-2.0","EUPL-1.2",
+            },
+            forbidden={
+                "GPL-2.0","GPL-2.0-only","GPL-2.0-or-later",
+                "GPL-3.0","GPL-3.0-only","GPL-3.0-or-later",
+                "AGPL-3.0","AGPL-3.0-only","AGPL-3.0-or-later","SSPL-1.0",
+            },
+            policy_name="enterprise-default",
+        )
+
+    def check(self, inventory_items):
+        violations = []
+        for item in inventory_items:
+            lic = item.get("license", "UNKNOWN")
+            pkg = item.get("name", "unknown")
+            ver = item.get("version", "?")
+            if lic in self.forbidden:
+                violations.append({"package": pkg, "version": ver, "license": lic,
+                    "violation_type": "forbidden",
+                    "message": "Package " + repr(pkg) + "@" + ver + " uses " + repr(lic) + " which is forbidden by policy " + repr(self.policy_name) + "."})
+            elif lic in self.restricted:
+                violations.append({"package": pkg, "version": ver, "license": lic,
+                    "violation_type": "restricted",
+                    "message": "Package " + repr(pkg) + "@" + ver + " uses " + repr(lic) + " which is restricted under " + repr(self.policy_name) + " -- legal review required."})
+            elif self.allowed and lic not in self.allowed:
+                violations.append({"package": pkg, "version": ver, "license": lic,
+                    "violation_type": "not_in_allowlist",
+                    "message": "Package " + repr(pkg) + "@" + ver + " uses " + repr(lic) + " which is not in the approved allowlist for " + repr(self.policy_name) + "."})
+        return violations
+
+
+# D-688: License compatibility matrix
+_LICENSE_COMPAT = {
+    "MIT": {"MIT":True,"Apache-2.0":True,"BSD-2-Clause":True,"BSD-3-Clause":True,"ISC":True,"Unlicense":True,"CC0-1.0":True,"0BSD":True,"GPL-2.0":True,"GPL-3.0":True,"GPL-3.0-only":True,"AGPL-3.0":True,"LGPL-2.1":True,"LGPL-3.0":True,"MPL-2.0":True,"EPL-1.0":True,"EPL-2.0":True},
+    "Apache-2.0": {"MIT":True,"Apache-2.0":True,"BSD-2-Clause":True,"BSD-3-Clause":True,"ISC":True,"Unlicense":True,"CC0-1.0":True,"GPL-2.0":False,"GPL-2.0-only":False,"GPL-2.0-or-later":None,"GPL-3.0":True,"GPL-3.0-only":True,"GPL-3.0-or-later":True,"AGPL-3.0":True,"LGPL-2.1":True,"LGPL-3.0":True,"MPL-2.0":True,"EPL-1.0":False,"EPL-2.0":False},
+    "GPL-3.0": {"MIT":True,"Apache-2.0":True,"BSD-2-Clause":True,"BSD-3-Clause":True,"ISC":True,"Unlicense":True,"CC0-1.0":True,"GPL-2.0":False,"GPL-2.0-only":False,"GPL-2.0-or-later":True,"GPL-3.0":True,"GPL-3.0-only":True,"GPL-3.0-or-later":True,"AGPL-3.0":False,"LGPL-2.1":True,"LGPL-3.0":True,"MPL-2.0":True,"EPL-1.0":False,"EPL-2.0":False},
+    "AGPL-3.0": {"MIT":True,"Apache-2.0":True,"BSD-2-Clause":True,"BSD-3-Clause":True,"ISC":True,"Unlicense":True,"CC0-1.0":True,"GPL-2.0":False,"GPL-3.0":False,"GPL-3.0-only":False,"GPL-3.0-or-later":True,"AGPL-3.0":True,"AGPL-3.0-only":True,"LGPL-2.1":True,"LGPL-3.0":True,"MPL-2.0":True},
+}
+
+
+def check_license_compatibility(inventory_items, project_license="MIT"):
+    # D-688: Check license interaction between dependencies.
+    compat_row = _LICENSE_COMPAT.get(project_license, {})
+    issues = []
+    for item in inventory_items:
+        dep_lic = item.get("license", "UNKNOWN")
+        pkg = item.get("name", "unknown")
+        ver = item.get("version", "?")
+        if dep_lic in ("UNKNOWN", "NOASSERTION", ""):
+            continue
+        compat = compat_row.get(dep_lic)
+        if compat is False:
+            issues.append({"package":pkg,"version":ver,"dep_license":dep_lic,"project_license":project_license,"compatibility":"incompatible","message":"License conflict: " + repr(pkg) + "@" + ver + " uses " + dep_lic + ", incompatible with " + project_license + ". Cannot legally distribute."})
+        elif compat is None:
+            issues.append({"package":pkg,"version":ver,"dep_license":dep_lic,"project_license":project_license,"compatibility":"unclear","message":"License interaction unclear: " + repr(pkg) + "@" + ver + " uses " + dep_lic + " with " + project_license + ". Legal review recommended."})
+    return issues
