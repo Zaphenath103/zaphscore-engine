@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Started — ZaphScore</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; --green: #4ade80; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+  .logo { font-size: 1.1rem; font-weight: 700; color: var(--accent); text-decoration: none; margin-bottom: 48px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 480px; }
+  /* Steps indicator */
+  .steps { display: flex; align-items: center; gap: 0; margin-bottom: 40px; }
+  .step { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; transition: all 0.2s; }
+  .step-num.active { background: var(--accent); color: white; }
+  .step-num.done { background: var(--green); color: #0a0a0f; }
+  .step-num.inactive { background: var(--border); color: var(--muted); }
+  .step-label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+  .step-label.active { color: var(--text); font-weight: 600; }
+  .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+  /* Panel content */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
+  p { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], input[type=email], input[type=url] { width: 100%; background: #0d0d15; border: 1px solid var(--border); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: 0.9rem; outline: none; transition: border-color 0.15s; }
+  input:focus { border-color: var(--accent); }
+  .btn { width: 100%; padding: 13px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; border: none; margin-top: 8px; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: var(--border); color: var(--muted); margin-top: 12px; }
+  /* Scan result preview */
+  .score-preview { text-align: center; padding: 32px; border: 1px solid var(--border); border-radius: 12px; margin: 24px 0; }
+  .score-big { font-size: 4rem; font-weight: 900; color: var(--yellow, #fbbf24); line-height: 1; }
+  .score-grade { font-size: 1rem; color: var(--muted); margin-top: 4px; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 16px 0; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s ease; }
+  .scanning-text { font-size: 0.8rem; color: var(--muted); text-align: center; }
+  /* Success */
+  .success-icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(74,222,128,0.15); border: 2px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 24px; }
+</style>
+</head>
+<body>
+<a href="/" class="logo">ZaphScore</a>
+
+<div class="card">
+  <div class="steps">
+    <div class="step">
+      <div class="step-num active" id="s1">1</div>
+      <div class="step-label active" id="sl1">Account</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-num inactive" id="s2">2</div>
+      <div class="step-label" id="sl2">First scan</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-num inactive" id="s3">3</div>
+      <div class="step-label" id="sl3">Your score</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Account -->
+  <div class="panel active" id="panel-1">
+    <h2>Create your account</h2>
+    <p>Takes 30 seconds. No credit card required for your first 3 scans.</p>
+    <label>Email address</label>
+    <input type="email" id="email" placeholder="you@company.com" style="margin-bottom:16px">
+    <button class="btn btn-primary" onclick="goToStep2()">Continue →</button>
+    <p style="text-align:center;margin-top:16px;font-size:0.8rem">Already have an account? <a href="/login" style="color:var(--accent)">Log in</a></p>
+  </div>
+
+  <!-- Step 2: First scan -->
+  <div class="panel" id="panel-2">
+    <h2>Scan your first repo</h2>
+    <p>Paste any public GitHub URL. Your score appears in under 60 seconds.</p>
+    <label>GitHub repository URL</label>
+    <input type="url" id="repo-url" placeholder="https://github.com/your-org/your-agent" style="margin-bottom:16px">
+    <button class="btn btn-primary" onclick="startScan()">Scan now →</button>
+    <div id="scan-progress" style="display:none;margin-top:24px">
+      <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+      <div class="scanning-text" id="scan-status">Cloning repository...</div>
+    </div>
+    <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+  </div>
+
+  <!-- Step 3: Score -->
+  <div class="panel" id="panel-3">
+    <div class="success-icon">✓</div>
+    <h2 style="text-align:center">Your ZaphScore is ready</h2>
+    <div class="score-preview">
+      <div class="score-big" id="final-score">74.3</div>
+      <div class="score-grade">Grade C — Needs attention</div>
+    </div>
+    <p style="text-align:center">3 critical findings need fixing. Upgrade to Pro to see the full report and PDF export.</p>
+    <button class="btn btn-primary" onclick="window.location='/dashboard'">View full dashboard →</button>
+    <button class="btn btn-secondary" onclick="window.location='/pricing'">Upgrade to Pro</button>
+  </div>
+</div>
+
+<script>
+function goToStep(n) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  [1,2,3].forEach(i => {
+    const num = document.getElementById('s' + i);
+    const lbl = document.getElementById('sl' + i);
+    num.className = 'step-num ' + (i < n ? 'done' : i === n ? 'active' : 'inactive');
+    num.textContent = i < n ? '✓' : i;
+    lbl.className = 'step-label' + (i === n ? ' active' : '');
+  });
+}
+
+function goToStep2() {
+  const email = document.getElementById('email').value.trim();
+  if (!email || !email.includes('@')) { document.getElementById('email').focus(); return; }
+  goToStep(2);
+}
+
+function startScan() {
+  const url = document.getElementById('repo-url').value.trim();
+  if (!url.startsWith('https://github.com/')) {
+    document.getElementById('repo-url').style.borderColor = '#f87171';
+    return;
+  }
+  document.getElementById('scan-progress').style.display = 'block';
+  const phases = ['Cloning repository...', 'Scanning secrets...', 'Checking dependencies...', 'Running SAST...', 'Analyzing IaC...', 'Computing score...'];
+  let pct = 0;
+  let phase = 0;
+  const interval = setInterval(() => {
+    pct += Math.random() * 15 + 5;
+    if (pct > 95) pct = 95;
+    document.getElementById('progress').style.width = pct + '%';
+    document.getElementById('scan-status').textContent = phases[Math.min(phase++, phases.length - 1)];
+    if (pct >= 95) {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('progress').style.width = '100%';
+        setTimeout(() => goToStep(3), 400);
+      }, 600);
+    }
+  }, 800);
+}
+</script>
+</body>
+</html>

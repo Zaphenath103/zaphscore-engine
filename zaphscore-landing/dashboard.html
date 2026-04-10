@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan History — ZaphScore</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e8f0; --muted: #64748b; --accent: #6366f1; --green: #4ade80; --yellow: #fbbf24; --red: #f87171; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  header { padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.1rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+  .user-menu { display: flex; align-items: center; gap: 16px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+  h1 { font-size: 1.5rem; font-weight: 700; }
+  .btn { padding: 10px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  /* Trend chart */
+  .trend-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+  .trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .trend-title { font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+  .trend-score { font-size: 2rem; font-weight: 800; }
+  .trend-delta { font-size: 0.8rem; color: var(--green); margin-left: 8px; }
+  .chart { height: 120px; position: relative; display: flex; align-items: flex-end; gap: 6px; }
+  .chart-bar { flex: 1; border-radius: 4px 4px 0 0; position: relative; cursor: pointer; transition: opacity 0.15s; min-width: 0; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: var(--muted); white-space: nowrap; }
+  .chart-tooltip { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); background: #1e1e2e; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+  .chart-bar:hover .chart-tooltip { opacity: 1; }
+  .chart-labels { margin-top: 28px; }
+  /* Filters */
+  .filters { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; outline: none; width: 240px; }
+  .filter-input:focus { border-color: var(--accent); }
+  select.filter-input { cursor: pointer; }
+  /* Scan table */
+  .scan-table { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .scan-row { display: grid; grid-template-columns: 2fr 80px 100px 120px 100px 80px; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 0.875rem; gap: 16px; }
+  .scan-row:last-child { border-bottom: none; }
+  .scan-row.header { background: #0d0d15; color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 20px; }
+  .repo-name { font-weight: 500; color: var(--text); }
+  .repo-url { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .grade { font-weight: 800; font-size: 1rem; }
+  .grade.A { color: var(--green); }
+  .grade.B { color: #86efac; }
+  .grade.C { color: var(--yellow); }
+  .grade.D { color: #fb923c; }
+  .grade.F { color: var(--red); }
+  .score-num { font-weight: 700; }
+  .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .status-badge.complete { background: rgba(74,222,128,0.1); color: var(--green); }
+  .status-badge.running { background: rgba(99,102,241,0.1); color: var(--accent); }
+  .status-badge.failed { background: rgba(248,113,113,0.1); color: var(--red); }
+  .action-btn { color: var(--accent); cursor: pointer; font-size: 0.8rem; text-decoration: none; }
+  .action-btn:hover { text-decoration: underline; }
+  .empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+  .empty h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .empty p { font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">ZaphScore</a>
+  <div class="user-menu">
+    <a href="/" class="btn btn-outline" style="padding:7px 14px;font-size:0.8rem">New scan</a>
+    <div class="avatar">M</div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Scan History</h1>
+    <span id="scan-count" style="color:var(--muted);font-size:0.875rem"></span>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="trend-card" id="trend-section" style="display:none">
+    <div class="trend-header">
+      <div>
+        <div class="trend-title">Average score trend — last 10 scans</div>
+        <div style="margin-top:6px"><span class="trend-score" id="avg-score">–</span><span class="trend-delta" id="score-delta"></span></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted)" id="trend-range"></div>
+    </div>
+    <div class="chart" id="trend-chart"></div>
+    <div class="chart-labels"></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <input type="text" class="filter-input" id="search" placeholder="Search repository...">
+    <select class="filter-input" id="grade-filter">
+      <option value="">All grades</option>
+      <option value="A">A (90–100)</option>
+      <option value="B">B (80–89)</option>
+      <option value="C">C (70–79)</option>
+      <option value="D">D (60–69)</option>
+      <option value="F">F (0–59)</option>
+    </select>
+    <select class="filter-input" id="sort-filter">
+      <option value="date">Newest first</option>
+      <option value="score-desc">Highest score</option>
+      <option value="score-asc">Lowest score</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="scan-table">
+    <div class="scan-row header">
+      <div>Repository</div>
+      <div>Grade</div>
+      <div>Score</div>
+      <div>Status</div>
+      <div>Date</div>
+      <div>Report</div>
+    </div>
+    <div id="scan-list"></div>
+  </div>
+</div>
+
+<script>
+const JWT = localStorage.getItem('zaphscore_jwt');
+const API = '';
+
+function grade(score) {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 70) return 'C';
+  if (score >= 60) return 'D';
+  return 'F';
+}
+
+function gradeColor(g) {
+  return { A: '#4ade80', B: '#86efac', C: '#fbbf24', D: '#fb923c', F: '#f87171' }[g] || '#64748b';
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function repoName(url) {
+  try { const p = new URL(url).pathname.split('/').filter(Boolean); return p.slice(-2).join('/'); } catch { return url; }
+}
+
+let allScans = [];
+
+function renderChart(scans) {
+  const scored = scans.filter(s => s.score != null).slice(0, 10).reverse();
+  if (scored.length < 2) return;
+  document.getElementById('trend-section').style.display = 'block';
+  const scores = scored.map(s => s.score);
+  const avg = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+  const delta = scores[scores.length-1] - scores[0];
+  document.getElementById('avg-score').textContent = avg;
+  document.getElementById('score-delta').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(1) + ' trend';
+  document.getElementById('score-delta').style.color = delta >= 0 ? '#4ade80' : '#f87171';
+  const max = Math.max(...scores);
+  const chart = document.getElementById('trend-chart');
+  chart.innerHTML = '';
+  scored.forEach((s, i) => {
+    const g = grade(s.score);
+    const pct = (s.score / 100) * 100;
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = pct + '%';
+    bar.style.background = gradeColor(g);
+    bar.style.opacity = '0.7';
+    bar.innerHTML = `<div class="chart-tooltip">${s.score.toFixed(1)} — ${repoName(s.repo_url || '')}</div><div class="chart-label">${formatDate(s.created_at).split(',')[0]}</div>`;
+    chart.appendChild(bar);
+  });
+}
+
+function render(scans) {
+  const list = document.getElementById('scan-list');
+  document.getElementById('scan-count').textContent = scans.length + ' scan' + (scans.length !== 1 ? 's' : '');
+  if (!scans.length) {
+    list.innerHTML = '<div class="empty"><h3>No scans yet</h3><p>Submit your first repository to see results here.</p></div>';
+    return;
+  }
+  list.innerHTML = scans.map(s => {
+    const g = s.score != null ? grade(s.score) : '–';
+    const scoreStr = s.score != null ? s.score.toFixed(1) : '–';
+    const statusClass = s.status === 'complete' ? 'complete' : s.status === 'failed' ? 'failed' : 'running';
+    const statusLabel = s.status === 'complete' ? '✓ Complete' : s.status === 'failed' ? '✗ Failed' : '⟳ Running';
+    return `<div class="scan-row">
+      <div><div class="repo-name">${repoName(s.repo_url || '')}</div><div class="repo-url">${s.repo_url || ''}</div></div>
+      <div class="grade ${g}" style="color:${gradeColor(g)}">${g}</div>
+      <div class="score-num">${scoreStr}</div>
+      <div><span class="status-badge ${statusClass}">${statusLabel}</span></div>
+      <div style="color:var(--muted)">${formatDate(s.created_at)}</div>
+      <div>${s.status === 'complete' ? '<a class="action-btn" href="/api/scans/' + s.id + '/report.pdf" target="_blank">PDF</a>' : '–'}</div>
+    </div>`;
+  }).join('');
+}
+
+function applyFilters() {
+  let scans = [...allScans];
+  const q = document.getElementById('search').value.toLowerCase();
+  const g = document.getElementById('grade-filter').value;
+  const sort = document.getElementById('sort-filter').value;
+  if (q) scans = scans.filter(s => (s.repo_url || '').toLowerCase().includes(q));
+  if (g) scans = scans.filter(s => s.score != null && grade(s.score) === g);
+  if (sort === 'score-desc') scans.sort((a,b) => (b.score||0) - (a.score||0));
+  else if (sort === 'score-asc') scans.sort((a,b) => (a.score||0) - (b.score||0));
+  render(scans);
+}
+
+['search','grade-filter','sort-filter'].forEach(id => document.getElementById(id).addEventListener('input', applyFilters));
+
+async function load() {
+  if (!JWT) {
+    document.getElementById('scan-list').innerHTML = '<div class="empty"><h3>Sign in to view your scans</h3><p><a href="/signup" style="color:var(--accent)">Create account</a> or <a href="/login" style="color:var(--accent)">log in</a>.</p></div>';
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/scans', { headers: { Authorization: 'Bearer ' + JWT } });
+    if (!res.ok) throw new Error('API error ' + res.status);
+    allScans = await res.json();
+    renderChart(allScans);
+    render(allScans);
+  } catch (e) {
+    document.getElementById('scan-list').innerHTML = '<div class="empty"><h3>Could not load scans</h3><p>' + e.message + '</p></div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
