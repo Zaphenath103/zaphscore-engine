@@ -62,6 +62,9 @@ from app.engine.nvd_scanner import enrich_with_nvd
 from app.engine.sbom_generator import generate_sbom, scan_sbom_compliance
 from app.engine.fix_generator import generate_fixes
 from app.engine.scorer import calculate_score
+from app.engine.jwt_scanner import scan_jwt_issues
+from app.engine.deserialization_scanner import scan_deserialization
+from app.engine.ssrf_scanner import scan_ssrf
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +252,54 @@ async def run_scan(
             phases_failed.append("sast_scan")
             warnings.append(f"SAST scan failed: {exc}")
             await _notify(progress_callback, ScanPhase.sast_scan, 60, f"SAST scan failed: {exc}")
+
+        # ------------------------------------------------------------------
+        # Phase 4b: JWT security scan (EX-07 / CWE-287 / CWE-347)
+        # ------------------------------------------------------------------
+        logger.info("[%s] Phase 4b: JWT security scan", scan_id)
+        try:
+            jwt_findings = await asyncio.get_event_loop().run_in_executor(
+                None, scan_jwt_issues, repo_dir
+            )
+            all_findings.extend(jwt_findings)
+            phases_completed.append("jwt_scan")
+            logger.info("[%s] JWT scan found %d issues", scan_id, len(jwt_findings))
+        except Exception as exc:
+            logger.error("[%s] JWT scan failed: %s", scan_id, exc, exc_info=True)
+            phases_failed.append("jwt_scan")
+            warnings.append(f"JWT scan failed: {exc}")
+
+        # ------------------------------------------------------------------
+        # Phase 4c: Deserialization scan (EX-08 / CWE-502)
+        # ------------------------------------------------------------------
+        logger.info("[%s] Phase 4c: Deserialization scan", scan_id)
+        try:
+            deser_findings = await asyncio.get_event_loop().run_in_executor(
+                None, scan_deserialization, repo_dir
+            )
+            all_findings.extend(deser_findings)
+            phases_completed.append("deserialization_scan")
+            logger.info("[%s] Deserialization scan found %d issues", scan_id, len(deser_findings))
+        except Exception as exc:
+            logger.error("[%s] Deserialization scan failed: %s", scan_id, exc, exc_info=True)
+            phases_failed.append("deserialization_scan")
+            warnings.append(f"Deserialization scan failed: {exc}")
+
+        # ------------------------------------------------------------------
+        # Phase 4d: SSRF scan (EX-10 / CWE-918)
+        # ------------------------------------------------------------------
+        logger.info("[%s] Phase 4d: SSRF scan", scan_id)
+        try:
+            ssrf_findings = await asyncio.get_event_loop().run_in_executor(
+                None, scan_ssrf, repo_dir
+            )
+            all_findings.extend(ssrf_findings)
+            phases_completed.append("ssrf_scan")
+            logger.info("[%s] SSRF scan found %d issues", scan_id, len(ssrf_findings))
+        except Exception as exc:
+            logger.error("[%s] SSRF scan failed: %s", scan_id, exc, exc_info=True)
+            phases_failed.append("ssrf_scan")
+            warnings.append(f"SSRF scan failed: {exc}")
 
         # ------------------------------------------------------------------
         # Phase 5: Secret detection (TruffleHog)
