@@ -1,93 +1,88 @@
 """
 D-063: Request ID Tracing Middleware.
 
-Generates a UUID per request and:
-1. Attaches it as X-Request-ID response header (visible to API clients for support)
-2. Reads it from X-Request-ID request header (allows clients to supply their own)
-3. Makes it available via contextvars for injection into log records
+Generates a UUID per request, attaches it as X-Request-ID header in both
+request and response, and injects it into the logging context.
 
-Every log line then includes the request_id, making it trivial to grep all logs
-for a single failing request across distributed instances.
+Every log line from this request includes request_id — making production
+debugging tractable. Grep one ID across all logs to trace a full request.
 
-Usage in log filters:
-    from app.middleware.request_id import get_request_id
-    request_id = get_request_id()  # returns the ID or "no-request"
-
-Mount in main.py BEFORE other middleware so all subsequent middleware/handlers
-see the request_id:
+Usage in main.py:
     from app.middleware.request_id import RequestIDMiddleware
     app.add_middleware(RequestIDMiddleware)
+
+Log output format (with structlog or standard logging):
+    2026-04-10 09:00:00 | zse.api.scans | INFO | [req-id=abc123] Scan queued
 """
 
 from __future__ import annotations
 
+import logging
 import uuid
 from contextvars import ContextVar
-from typing import Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-# Context variable — survives async context switches within a single request
-_request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+logger = logging.getLogger("zse.middleware.request_id")
+
+# Context variable — allows downstream code to access request_id without
+# threading or passing it through every function call
+_request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
 def get_request_id() -> str:
-    """Return the current request's ID, or 'no-request' if outside a request context."""
-    return _request_id_var.get() or "no-request"
+    """Return the current request's ID (empty string outside of a request context)."""
+    return _request_id_var.get("")
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
-    """Attach a UUID request ID to every request for distributed tracing.
-
-    If the client supplies X-Request-ID, that value is used (max 64 chars,
-    validated to contain only safe characters). Otherwise a new UUID4 is generated.
-
-    The ID is:
-    - Stored in a ContextVar (accessible anywhere in the async call stack)
-    - Attached to the response as X-Request-ID
-    """
-
-    _SAFE_CHARS = frozenset(
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "0123456789-_."
-    )
-
-    def _sanitize_request_id(self, value: str) -> Optional[str]:
-        """Return value if it is safe and short enough, else None."""
-        if not value or len(value) > 64:
-            return None
-        if not all(c in self._SAFE_CHARS for c in value):
-            return None
-        return value
+    """Generate UUID per request; attach to headers and logging context."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        # Honour client-supplied ID (e.g. Stripe, load balancers) or generate fresh one
-        client_id = self._sanitize_request_id(
-            request.headers.get("X-Request-ID", "")
-        )
-        request_id = client_id or str(uuid.uuid4())
+        # Use existing ID from client if provided (tracing across services),
+        # otherwise generate a new one
+        incoming_id = request.headers.get("X-Request-ID", "")
+        request_id = incoming_id if _is_valid_uuid(incoming_id) else str(uuid.uuid4())
 
-        # Set context so downstream code can call get_request_id()
+        # Inject into context var (accessible via get_request_id())
         token = _request_id_var.set(request_id)
+
+        # Add to request state for use in endpoint handlers
+        request.state.request_id = request_id
+
+        # Inject a logging filter so all log records from this context include request_id
+        _log_filter = _RequestIDFilter(request_id)
+        root_logger = logging.getLogger()
+        root_logger.addFilter(_log_filter)
 
         try:
             response = await call_next(request)
         finally:
+            root_logger.removeFilter(_log_filter)
             _request_id_var.reset(token)
 
+        # Always return the request_id in the response header
         response.headers["X-Request-ID"] = request_id
         return response
 
 
-class RequestIDLogFilter:
-    """logging.Filter that injects request_id into every log record.
+def _is_valid_uuid(value: str) -> bool:
+    """Check if value is a valid UUID string."""
+    try:
+        uuid.UUID(value)
+        return True
+    except (ValueError, AttributeError):
+        return False
 
-    Add to any handler:
-        handler.addFilter(RequestIDLogFilter())
-    """
 
-    def filter(self, record):
-        record.request_id = get_request_id()
+class _RequestIDFilter(logging.Filter):
+    """Logging filter that injects request_id into every log record."""
+
+    def __init__(self, request_id: str) -> None:
+        super().__init__()
+        self.request_id = request_id
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = self.request_id
         return True

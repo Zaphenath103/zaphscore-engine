@@ -19,51 +19,14 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Res
 from app.config import settings
 
 # ---------------------------------------------------------------------------
-# Logging (D-063: inject request_id into every log record)
+# Logging
 # ---------------------------------------------------------------------------
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
-    format="%(asctime)s | %(name)-24s | %(levelname)-7s | [%(request_id)s] %(message)s",
+    format="%(asctime)s | %(name)-24s | %(levelname)-7s | %(message)s",
 )
 logger = logging.getLogger("zse")
-
-# Attach the request_id filter to the root logger so all loggers inherit it
-try:
-    from app.middleware.request_id import RequestIDLogFilter
-    logging.getLogger().addFilter(RequestIDLogFilter())
-except Exception as _e:
-    logging.getLogger("zse").warning("RequestIDLogFilter not loaded: %s", _e)
-
-# ---------------------------------------------------------------------------
-# D-060: Sentry — initialise before the lifespan so startup errors are captured
-# ---------------------------------------------------------------------------
-if settings.SENTRY_DSN:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.starlette import StarletteIntegration
-
-        sentry_sdk.init(
-            dsn=settings.SENTRY_DSN,
-            traces_sample_rate=0.1,        # 10% of requests traced for performance
-            profiles_sample_rate=0.05,     # 5% profiled — low overhead
-            environment=os.environ.get("RAILWAY_ENVIRONMENT", "development"),
-            integrations=[
-                StarletteIntegration(transaction_style="endpoint"),
-                FastApiIntegration(transaction_style="endpoint"),
-            ],
-            # Never send user PII — scan results may contain sensitive repo data
-            send_default_pii=False,
-        )
-        logger.info("Sentry initialised (DSN configured)")
-    except ImportError:
-        logger.warning(
-            "sentry-sdk not installed — add 'sentry-sdk[fastapi]' to requirements.txt "
-            "to enable error tracking."
-        )
-    except Exception as _sentry_err:
-        logger.warning("Sentry init failed: %s", _sentry_err)
 
 # ---------------------------------------------------------------------------
 # Global state — set during lifespan, read by endpoints
@@ -199,15 +162,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
-# D-063: Request ID tracing — attach UUID to every request/response/log line
-try:
-    from app.middleware.request_id import RequestIDMiddleware
-    app.add_middleware(RequestIDMiddleware)
-    logger.info("Request ID middleware loaded")
-except Exception as e:
-    logger.error("Request ID middleware failed to load: %s", e)
-
-# D-014: Security headers — X-Content-Type-Options, X-Frame-Options, CSP, HSTS, etc.
+# D-014: Security headers — X-Content-Type-Options, X-Frame-Options, CSP, etc.
 try:
     from app.middleware.security_headers import SecurityHeadersMiddleware
     app.add_middleware(SecurityHeadersMiddleware)
@@ -223,80 +178,42 @@ try:
 except Exception as e:
     logger.error("Rate limiting middleware failed to load: %s", e)
 
-# ---------------------------------------------------------------------------
-# D-057: API versioning — mount all routers under BOTH /api/v1/ AND /api/
-#
-# Strategy:
-#   - /api/v1/ is the canonical versioned path (new clients use this)
-#   - /api/ is preserved as a backward-compat alias with X-API-Deprecated header
-#
-# Each router already has its own prefix (e.g. /api/scans, /api/repos).
-# We re-mount the same router objects without a prefix change, then add a
-# /api/v1/ sub-application that re-declares the versioned routes.
-#
-# Implementation: Use APIRouter with include_router + prefix override.
-# FastAPI does not support prefix stripping for existing routers in-place,
-# so we use a v1 sub-router that re-mounts everything.
-# ---------------------------------------------------------------------------
-
-from fastapi import APIRouter as _APIRouter
-
-_v1 = _APIRouter(prefix="/api/v1")  # versioned prefix
-
-
-def _mount_router(router, *, label: str) -> None:
-    """Mount a router at both /api/ (legacy) and /api/v1/ (canonical)."""
-    # Legacy /api/ mount (unchanged path — backward compat)
-    try:
-        app.include_router(router)
-    except Exception as e:
-        logger.error("Failed to load %s router (legacy): %s", label, e)
-
-    # Canonical /api/v1/ mount — strips the router's own /api prefix, adds /v1
-    try:
-        # Build a v1-prefixed version: router.prefix is e.g. "/api/scans"
-        # We want to mount at "/api/v1/scans" — i.e. strip "/api" from router.prefix
-        stripped_prefix = router.prefix.removeprefix("/api")
-        app.include_router(router, prefix=f"/api/v1{stripped_prefix}", tags=[f"{label}-v1"])
-    except Exception as e:
-        logger.error("Failed to load %s router (v1): %s", label, e)
-
-
 # Mount routers — wrapped so a broken router never kills startup
 try:
-    from app.api.scans import router as scans_router
-    _mount_router(scans_router, label="scans")
+    from app.api.scans import router as scans_router, admin_router as scans_admin_router
+    app.include_router(scans_router)
+    app.include_router(scans_admin_router)  # D-065: queue depth metric
 except Exception as e:
     logger.error("Failed to load scans router: %s", e)
 
 try:
     from app.api.repos import router as repos_router
-    _mount_router(repos_router, label="repos")
+    app.include_router(repos_router)
 except Exception as e:
     logger.error("Failed to load repos router: %s", e)
 
 try:
     from app.api.waitlist import router as waitlist_router
-    _mount_router(waitlist_router, label="waitlist")
+    app.include_router(waitlist_router)
 except Exception as e:
     logger.error("Failed to load waitlist router: %s", e)
 
 try:
     from app.api.user import router as user_router  # D-012: GDPR delete
-    _mount_router(user_router, label="user")
+    app.include_router(user_router)
 except Exception as e:
     logger.error("Failed to load user router: %s", e)
 
 try:
     from app.api.reports import router as reports_router  # D-043: PDF export
-    _mount_router(reports_router, label="reports")
+    app.include_router(reports_router)
 except Exception as e:
     logger.error("Failed to load reports router: %s", e)
 
 try:
     from app.api.webhook import router as webhook_router
-    _mount_router(webhook_router, label="webhook")
-    logger.info("Stripe webhook router loaded (legacy + v1)")
+    app.include_router(webhook_router)
+    logger.info("Stripe webhook router loaded")
 except Exception as e:
     logger.error("Failed to load webhook router: %s", e)
 
@@ -341,64 +258,66 @@ async def ping():
 
 @app.get("/health")
 async def health():
-    """D-064: Enhanced health check with subsystem and resource status.
+    """D-064: Enhanced health check � DB connection, disk, memory, all subsystems.
 
-    Returns:
-        status: 'healthy' (all systems go), 'degraded' (partial), 'unhealthy' (critical failure)
-        db: database backend status and connectivity
-        worker: scan worker status
-        disk_free_mb: free space in /tmp (scan workspace) — low = scans will fail
-        checks: ordered list of check results for monitoring dashboards
+    Returns status: healthy | degraded | unhealthy
+    Used by Railway/Vercel health probes and external monitoring.
     """
-    import shutil as _shutil
-    import time as _time
+    import shutil
+    import sys
 
     checks: list[dict] = []
-    overall_healthy = True
+    overall = "healthy"
 
-    # --- DB check ---
+    # --- Database check ---
     db_status = "ok" if _db_ok else "error"
     if not _db_ok:
-        overall_healthy = False
+        overall = "degraded"
     checks.append({"name": "database", "status": db_status, "backend": _db_backend})
 
     # --- Worker check ---
     worker_status = "ok" if _worker_ok else "degraded"
+    if not _worker_ok:
+        overall = "degraded" if overall == "healthy" else overall
     checks.append({"name": "worker", "status": worker_status})
 
-    # --- Disk check (scan workspace) ---
+    # --- Disk space check (for cloning repos) ---
     try:
-        disk = _shutil.disk_usage("/tmp")
+        disk = shutil.disk_usage("/tmp")
         disk_free_mb = disk.free // (1024 * 1024)
-        disk_status = "ok" if disk_free_mb > 500 else ("degraded" if disk_free_mb > 100 else "critical")
-        if disk_status == "critical":
-            overall_healthy = False
-        checks.append({"name": "disk_tmp", "status": disk_status, "free_mb": disk_free_mb})
-    except Exception as _e:
+        disk_status = "ok" if disk_free_mb > 500 else "low"
+        if disk_free_mb < 100:
+            disk_status = "critical"
+            overall = "unhealthy"
+        elif disk_free_mb < 500:
+            overall = "degraded" if overall == "healthy" else overall
+    except Exception:
         disk_free_mb = -1
-        checks.append({"name": "disk_tmp", "status": "unknown", "error": str(_e)})
+        disk_status = "unknown"
+    checks.append({"name": "disk_tmp", "status": disk_status, "free_mb": disk_free_mb})
 
     # --- Memory check ---
     try:
-        import resource as _resource
-        mem_usage_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024
-        checks.append({"name": "memory_rss_mb", "status": "ok", "rss_mb": mem_usage_mb})
+        import resource
+        mem_usage_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
+        mem_status = "ok" if mem_usage_mb < 400 else "high"
     except Exception:
-        # resource module not available on all platforms — non-fatal
-        checks.append({"name": "memory_rss_mb", "status": "unknown"})
+        mem_usage_mb = -1
+        mem_status = "unknown"
+    checks.append({"name": "memory", "status": mem_status, "rss_mb": mem_usage_mb})
 
-    overall = "healthy" if (overall_healthy and _db_ok) else ("degraded" if _db_ok else "unhealthy")
+    status_code = 200 if overall in ("healthy", "degraded") else 503
 
-    return {
-        "service": "zaphenath-security-engine",
-        "status": overall,
-        "version": app.version,
-        "database": _db_backend,
-        "worker": "alive" if _worker_ok else "down",
-        "disk_free_mb": disk_free_mb,
-        "port": os.environ.get("PORT", "default"),
-        "checks": checks,
-    }
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "service": "zaphenath-security-engine",
+            "status": overall,
+            "version": app.version,
+            "checks": checks,
+            "port": os.environ.get("PORT", "default"),
+        }
+    )
 
 
 @app.get("/og-image.png")

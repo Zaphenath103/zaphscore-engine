@@ -284,3 +284,124 @@ async def list_scans(
         )
 
     return PaginatedScans(items=items, total=total, page=page, per_page=per_page)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/admin/queue — D-065: Scan queue depth metric (admin only)
+# ---------------------------------------------------------------------------
+
+admin_router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+
+def _is_admin(current_user: dict) -> bool:
+    """Check if user has admin JWT claim."""
+    app_meta = current_user.get("app_metadata", {}) or {}
+    user_meta = current_user.get("user_metadata", {}) or {}
+    role = (
+        app_meta.get("role")
+        or user_meta.get("role")
+        or current_user.get("role")
+        or ""
+    ).lower()
+    return role in ("admin", "superadmin", "service_role")
+
+
+@admin_router.get("/queue")
+async def get_queue_depth(current_user: CurrentUser):
+    """D-065: Admin-only scan queue metrics.
+
+    Returns pending/running counts, today's completions, average duration,
+    and the age of the oldest pending scan — without reading the DB directly.
+
+    Requires role=admin in JWT app_metadata.
+    """
+    if not _is_admin(current_user):
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail="Admin role required. Set app_metadata.role=admin in Supabase.",
+        )
+
+    from datetime import datetime, timezone, timedelta
+    import time
+
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    try:
+        # Fetch all scans for today to compute metrics
+        items_raw, total = await db.list_scans(page=1, per_page=500)
+
+        pending = 0
+        running = 0
+        done_today = 0
+        durations: list[float] = []
+        oldest_pending_created: float | None = None
+
+        for row in items_raw:
+            status = row.get("status", "")
+            created_raw = row.get("created_at")
+            started_raw = row.get("started_at")
+            completed_raw = row.get("completed_at")
+
+            if status == "queued":
+                pending += 1
+                # Track oldest pending
+                if created_raw:
+                    try:
+                        if isinstance(created_raw, str):
+                            dt = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+                        else:
+                            dt = created_raw
+                        age = (now - dt).total_seconds()
+                        if oldest_pending_created is None or age > oldest_pending_created:
+                            oldest_pending_created = age
+                    except Exception:
+                        pass
+
+            elif status == "running":
+                running += 1
+
+            elif status == "complete" and completed_raw:
+                try:
+                    if isinstance(completed_raw, str):
+                        completed_dt = datetime.fromisoformat(completed_raw.replace("Z", "+00:00"))
+                    else:
+                        completed_dt = completed_raw
+                    if completed_dt >= today_start:
+                        done_today += 1
+
+                    # Compute duration if both started_at and completed_at available
+                    if started_raw:
+                        if isinstance(started_raw, str):
+                            started_dt = datetime.fromisoformat(started_raw.replace("Z", "+00:00"))
+                        else:
+                            started_dt = started_raw
+                        duration = (completed_dt - started_dt).total_seconds()
+                        if duration > 0:
+                            durations.append(duration)
+                except Exception:
+                    pass
+
+        avg_duration = round(sum(durations) / len(durations), 1) if durations else 0.0
+
+        return {
+            "pending": pending,
+            "running": running,
+            "done_today": done_today,
+            "avg_duration_s": avg_duration,
+            "oldest_pending_age_s": round(oldest_pending_created, 0) if oldest_pending_created else 0,
+            "total_scans": total,
+            "computed_at": now.isoformat(),
+        }
+
+    except Exception as exc:
+        logger.error("Queue depth metric error: %s", exc)
+        return {
+            "pending": -1,
+            "running": -1,
+            "done_today": -1,
+            "avg_duration_s": 0,
+            "oldest_pending_age_s": 0,
+            "error": str(exc),
+        }
