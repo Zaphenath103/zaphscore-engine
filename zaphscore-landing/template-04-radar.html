@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #020506;
+    --grid: rgba(0,200,150,0.04);
+    --green: #00ffa3;
+    --green-dim: #00cc82;
+    --green-dark: rgba(0,255,163,0.08);
+    --amber: #ffaa00;
+    --red: #ff3355;
+    --text: #d0ffe8;
+    --muted: #3a6050;
+    --panel: rgba(0,20,15,0.8);
+    --border: rgba(0,255,163,0.1);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid overlay */
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HUD nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 0 32px;
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(2,5,6,0.95);
+    border-bottom: 1px solid var(--border);
+  }
+  .hud-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hud-logo-icon {
+    width: 24px; height: 24px;
+    border: 1.5px solid var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .hud-logo-icon::after {
+    content: '';
+    width: 8px; height: 1px;
+    background: var(--green);
+    position: absolute;
+    top: 50%; right: -1px;
+    transform: rotate(-45deg) translateY(-1px);
+    transform-origin: right center;
+    animation: sweep 3s linear infinite;
+  }
+  @keyframes sweep {
+    from { transform: rotate(-45deg) translateY(-1px); }
+    to { transform: rotate(315deg) translateY(-1px); }
+  }
+  .hud-logo-text { font-size: 0.9rem; color: var(--green); letter-spacing: 0.12em; }
+  .hud-status { display: flex; gap: 24px; }
+  .hud-item { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; }
+  .hud-item span { color: var(--green); }
+  .hud-cta {
+    border: 1px solid rgba(0,255,163,0.3);
+    color: var(--green);
+    padding: 7px 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: all 0.2s;
+  }
+  .hud-cta:hover { background: var(--green-dark); border-color: var(--green); }
+
+  /* Main layout */
+  .main {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    padding-top: 52px;
+  }
+
+  /* Left: radar + hero */
+  .left-panel {
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .threat-label {
+    font-size: 0.65rem;
+    color: rgba(0,255,163,0.4);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .hero-h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(2.4rem, 4.5vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #e8fff4;
+    margin-bottom: 16px;
+  }
+  .hero-h1 em { color: var(--green); font-style: normal; text-shadow: 0 0 24px rgba(0,255,163,0.3); }
+
+  .hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  /* Radar canvas */
+  .radar-wrapper {
+    width: 280px;
+    height: 280px;
+    position: relative;
+    margin: 32px 0;
+    flex-shrink: 0;
+  }
+  canvas#radar {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  .radar-score-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .radar-score-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,255,163,0.3);
+    line-height: 1;
+  }
+  .radar-grade { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 4px; }
+
+  /* Scan bar */
+  .scan-bar {
+    display: flex;
+    max-width: 520px;
+  }
+  .scan-input {
+    flex: 1;
+    background: rgba(0,20,15,0.6);
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--text);
+    padding: 12px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    letter-spacing: 0.02em;
+    transition: border-color 0.2s;
+  }
+  .scan-input:focus { border-color: rgba(0,255,163,0.3); }
+  .scan-input::placeholder { color: var(--muted); }
+  .scan-btn {
+    background: var(--green);
+    color: #020506;
+    border: none;
+    padding: 12px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .scan-btn:hover { opacity: 0.85; }
+
+  /* Right: threat panel */
+  .right-panel {
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.65rem;
+    color: rgba(0,255,163,0.4);
+    letter-spacing: 0.15em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-live { display: flex; align-items: center; gap: 6px; }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: livepulse 1.5s ease infinite; }
+  @keyframes livepulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* Repo threat list */
+  .threat-list { flex: 1; overflow-y: auto; }
+  .threat-list::-webkit-scrollbar { width: 3px; }
+  .threat-list::-webkit-scrollbar-track { background: transparent; }
+  .threat-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .threat-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0,255,163,0.04);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .threat-item:hover { background: rgba(0,255,163,0.03); }
+  .ti-name { font-size: 0.75rem; color: var(--text); }
+  .ti-sub { font-size: 0.62rem; color: var(--muted); margin-top: 2px; letter-spacing: 0.02em; }
+  .ti-score { font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif; letter-spacing: -0.04em; align-self: center; }
+  .ti-score.grade-a { color: var(--green); }
+  .ti-score.grade-b { color: #7dff8a; }
+  .ti-score.grade-c { color: var(--amber); }
+  .ti-score.grade-d { color: #ff7a00; }
+  .ti-score.grade-f { color: var(--red); }
+  .ti-score.locked { color: var(--muted); filter: blur(4px); }
+
+  /* Bottom metrics */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--border);
+  }
+  .metric {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .metric:nth-child(even) { border-right: none; }
+  .metric-val {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--green);
+  }
+  .metric-val.danger { color: var(--red); }
+  .metric-val.warn { color: var(--amber); }
+  .metric-label { font-size: 0.6rem; color: var(--muted); margin-top: 2px; letter-spacing: 0.08em; }
+
+  /* Below fold */
+  .below-fold { position: relative; z-index: 1; }
+  .features-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border);
+  }
+  .feat {
+    padding: 40px 32px;
+    border-right: 1px solid var(--border);
+  }
+  .feat:last-child { border-right: none; }
+  .feat-num { font-size: 0.62rem; color: rgba(0,255,163,0.3); letter-spacing: 0.15em; margin-bottom: 12px; }
+  .feat-title { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .feat-desc { font-size: 0.73rem; color: var(--muted); line-height: 1.7; font-family: 'Inter', sans-serif; }
+
+  /* Final CTA bar */
+  .cta-bar {
+    border-top: 1px solid var(--border);
+    padding: 48px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .cta-text h2 { font-family: 'Inter', sans-serif; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; color: var(--text); }
+  .cta-text p { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+  .cta-actions { display: flex; gap: 12px; }
+
+  footer { position: relative; z-index: 1; padding: 24px 40px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.05em; }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 20px; }
+  footer a:hover { color: var(--green); }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .right-panel { border-left: none; border-top: 1px solid var(--border); max-height: 400px; }
+    .features-row { grid-template-columns: 1fr; }
+    .feat { border-right: none; border-bottom: 1px solid var(--border); }
+    .hud-status { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="hud-logo">
+    <div class="hud-logo-icon"></div>
+    <div class="hud-logo-text">ZAPHSCORE</div>
+  </div>
+  <div class="hud-status">
+    <div class="hud-item">SCANS TODAY <span>1,247</span></div>
+    <div class="hud-item">F-GRADE RATE <span style="color:var(--red)">58%</span></div>
+    <div class="hud-item">SYSTEM <span>NOMINAL</span></div>
+  </div>
+  <a href="/onboard" class="hud-cta">[ INITIATE SCAN ]</a>
+</nav>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="threat-label">// AI AGENT THREAT ASSESSMENT</div>
+
+    <h1 class="hero-h1">Security you<br>can <em>measure.</em></h1>
+    <p class="hero-sub">ZaphScore runs 12 automated security checks on your AI agent repo and delivers a threat score in under 60 seconds. No guesswork. One number. Real risk.</p>
+
+    <div class="radar-wrapper">
+      <canvas id="radar" width="280" height="280"></canvas>
+      <div class="radar-score-overlay">
+        <div class="radar-score-num" id="radarScore">–</div>
+        <div class="radar-grade">THREAT LEVEL</div>
+      </div>
+    </div>
+
+    <div class="scan-bar">
+      <input type="url" class="scan-input" id="scanInput" placeholder="github.com/your-org/your-agent">
+      <button class="scan-btn" onclick="initScan()">[ SCAN ]</button>
+    </div>
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:8px;letter-spacing:0.05em">3 FREE SCANS · NO ACCOUNT REQUIRED</div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel-header">
+      <span>ACTIVE THREAT FEED</span>
+      <div class="panel-live"><div class="live-dot"></div><span style="color:var(--red)">LIVE</span></div>
+    </div>
+
+    <div class="threat-list" id="threatList">
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">crewAI / crewAI</div>
+          <div class="ti-sub">Multi-agent orchestration · 2 prompt injection vectors</div>
+        </div>
+        <div class="ti-score grade-c">78.6</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">langchain-ai / langchain</div>
+          <div class="ti-sub">LLM framework · 4 unconstrained tool calls</div>
+        </div>
+        <div class="ti-score grade-d">69.4</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">microsoft / autogen</div>
+          <div class="ti-sub">Agent framework · CVE-2024-5980 present</div>
+        </div>
+        <div class="ti-score grade-d">64.1</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">openai / swarm</div>
+          <div class="ti-sub">Orchestration · hardcoded secret in config</div>
+        </div>
+        <div class="ti-score grade-f">51.8</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">your-org / your-agent</div>
+          <div class="ti-sub">Submit above to reveal your score</div>
+        </div>
+        <div class="ti-score locked">??.?</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">phidatahq / phidata</div>
+          <div class="ti-sub">Agent builder · 3 CVEs in deps</div>
+        </div>
+        <div class="ti-score grade-c">73.2</div>
+      </div>
+      <div class="threat-item">
+        <div>
+          <div class="ti-name">stanford-oval / storm</div>
+          <div class="ti-sub">Research agent · SSRF vector detected</div>
+        </div>
+        <div class="ti-score grade-f">48.9</div>
+      </div>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-val danger">58%</div>
+        <div class="metric-label">F-GRADE RATE</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val warn">62.4</div>
+        <div class="metric-label">AVG SCORE</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">200K</div>
+        <div class="metric-label">REPOS AT RISK</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">12</div>
+        <div class="metric-label">SCAN DIMENSIONS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="below-fold">
+  <div class="features-row">
+    <div class="feat">
+      <div class="feat-num">VECTOR 01</div>
+      <div class="feat-title">Secrets Leakage</div>
+      <div class="feat-desc">API keys, tokens, and credentials embedded in code or history. Cross-referenced against 200+ secret patterns including OpenAI, Anthropic, AWS, and Stripe.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-num">VECTOR 02</div>
+      <div class="feat-title">Agent Attack Surface</div>
+      <div class="feat-desc">The attack vectors unique to AI: prompt injection endpoints, eval() in tool handlers, unconstrained agent actions, missing RBAC on agent capabilities.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-num">VECTOR 03</div>
+      <div class="feat-title">Supply Chain Risk</div>
+      <div class="feat-desc">Dependency CVEs, typosquatting detection, license compliance. Your agent is only as secure as every package it imports.</div>
+    </div>
+  </div>
+
+  <div class="cta-bar">
+    <div class="cta-text">
+      <h2>Run your threat assessment.</h2>
+      <p>3 free scans · Results in 60 seconds · No account required</p>
+    </div>
+    <div class="cta-actions">
+      <a href="/onboard" class="scan-btn" style="text-decoration:none; display:inline-block; padding:13px 24px; font-family:'Share Tech Mono',monospace; font-size:0.78rem; letter-spacing:0.08em">[ SCAN FREE ]</a>
+      <a href="/pricing" style="border:1px solid var(--border); color:var(--muted); padding:13px 24px; font-size:0.72rem; text-decoration:none; letter-spacing:0.08em; transition:all 0.2s">[ VIEW PRICING ]</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>ZAPHSCORE v2.4.1 · © 2026 ZAPHENATH · ALL SYSTEMS NOMINAL</div>
+  <div>
+    <a href="/pricing">PRICING</a>
+    <a href="/docs">DOCS</a>
+    <a href="/zaphnews">NEWS</a>
+    <a href="/terms">TERMS</a>
+    <a href="/privacy">PRIVACY</a>
+  </div>
+</footer>
+
+<script>
+// Radar animation
+(function() {
+  const canvas = document.getElementById('radar');
+  const ctx = canvas.getContext('2d');
+  const cx = 140, cy = 140, r = 120;
+  let angle = 0;
+  const blips = [
+    { a: 0.8, d: 0.55, label: 'secrets', color: '#ffaa00' },
+    { a: 2.1, d: 0.4, label: 'deps', color: '#ff3355' },
+    { a: 3.8, d: 0.7, label: 'sast', color: '#ffaa00' },
+    { a: 5.0, d: 0.3, label: 'iac', color: '#00ffa3' },
+    { a: 1.4, d: 0.8, label: 'agent', color: '#ff3355' },
+    { a: 4.2, d: 0.6, label: 'crypto', color: '#ffaa00' },
+  ];
+
+  function drawBlip(a, d, color, age) {
+    const x = cx + Math.cos(a) * d * r;
+    const y = cy + Math.sin(a) * d * r;
+    const alpha = Math.max(0, 1 - age);
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.8;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const blipHistory = blips.map(b => ({ ...b, age: 2 }));
+
+  function draw() {
+    ctx.clearRect(0, 0, 280, 280);
+
+    // Rings
+    [0.25, 0.5, 0.75, 1].forEach(scale => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,255,163,0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Crosshairs
+    ctx.strokeStyle = 'rgba(0,255,163,0.06)';
+    ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r); ctx.stroke();
+
+    // Sweep gradient
+    const sweep = ctx.createConicalGradient ? null : null; // fallback
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    const sweepGrad = ctx.createLinearGradient(0, -r, r, r);
+    sweepGrad.addColorStop(0, 'rgba(0,255,163,0)');
+    sweepGrad.addColorStop(1, 'rgba(0,255,163,0.12)');
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r, -Math.PI / 6, 0);
+    ctx.closePath();
+    ctx.fillStyle = sweepGrad;
+    ctx.fill();
+    // Sweep arm
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(r, 0);
+    ctx.strokeStyle = 'rgba(0,255,163,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Update and draw blips
+    blipHistory.forEach(b => {
+      const angleDiff = ((angle - b.a) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      if (angleDiff < 0.15) b.age = 0;
+      else b.age = Math.min(b.age + 0.005, 1.5);
+      drawBlip(b.a, b.d, b.color, b.age);
+    });
+
+    angle += 0.025;
+    if (angle > Math.PI * 2) angle -= Math.PI * 2;
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Animate score
+  let shown = false;
+  window.addEventListener('scroll', () => {
+    if (!shown && window.scrollY < 200) {
+      shown = true;
+      let v = 0;
+      const target = 42;
+      const interval = setInterval(() => {
+        v += 2;
+        document.getElementById('radarScore').textContent = v;
+        if (v >= target) { document.getElementById('radarScore').textContent = target; clearInterval(interval); }
+      }, 40);
+    }
+  });
+  // Show immediately
+  setTimeout(() => {
+    let v = 0;
+    const target = 42;
+    const interval = setInterval(() => {
+      v += 2;
+      document.getElementById('radarScore').textContent = v;
+      if (v >= target) { document.getElementById('radarScore').textContent = target; clearInterval(interval); }
+    }, 40);
+  }, 1000);
+})();
+
+function initScan() {
+  const url = document.getElementById('scanInput').value.trim();
+  const full = url.startsWith('http') ? url : 'https://' + url;
+  if (!full.includes('github.com/')) {
+    document.getElementById('scanInput').style.borderColor = 'rgba(255,51,85,0.4)';
+    return;
+  }
+  window.location = '/onboard?repo=' + encodeURIComponent(full);
+}
+document.getElementById('scanInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') initScan();
+  document.getElementById('scanInput').style.borderColor = '';
+});
+</script>
+</body>
+</html>

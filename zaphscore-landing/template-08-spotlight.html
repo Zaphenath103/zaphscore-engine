@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #040407;
+    --text: #f4f4f9;
+    --muted: #50507a;
+    --accent: #7b68ee;
+    --border: #0e0e18;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Spotlight effect */
+  #spotlight {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(123,104,238,0.07) 0%, transparent 65%);
+    transform: translate(-50%, -50%);
+    transition: left 0.15s ease, top 0.15s ease;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 18px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(4,4,7,0.8);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .logo { font-size: 1rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { color: var(--muted); font-size: 0.82rem; text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: white; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* Hero */
+  .hero {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 580px;
+    gap: 0;
+    padding-top: 56px;
+  }
+
+  /* Left: repo spotlight */
+  .spotlight-panel {
+    padding: 80px 40px 80px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .repo-card {
+    background: rgba(14,14,24,0.8);
+    border: 1px solid rgba(123,104,238,0.15);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(123,104,238,0.06);
+  }
+  .repo-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 40%, rgba(123,104,238,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Top of card */
+  .rc-top { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .rc-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(123,104,238,0.3), rgba(255,111,173,0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .rc-meta { flex: 1; }
+  .rc-name { font-size: 1rem; font-weight: 700; }
+  .rc-url { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .rc-grade-badge { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; }
+  .grade-c { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .grade-d { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .grade-f { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .grade-a { background: rgba(34,211,160,0.15); color: #22d3a0; }
+
+  /* Score big */
+  .rc-score-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .rc-score-num {
+    font-size: 5rem;
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    line-height: 1;
+    color: #f59e0b;
+  }
+  .rc-score-label { padding-bottom: 10px; }
+  .rc-score-label div:first-child { font-size: 1rem; font-weight: 700; }
+  .rc-score-label div:last-child { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  /* 12 dimension bars */
+  .dimensions { display: flex; flex-direction: column; gap: 10px; }
+  .dim-row { display: grid; grid-template-columns: 100px 1fr auto; gap: 10px; align-items: center; }
+  .dim-label { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
+  .dim-bar { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+  .dim-fill { height: 100%; border-radius: 2px; }
+  .dim-score { font-size: 0.72rem; font-weight: 700; width: 32px; text-align: right; }
+  .dim-locked { filter: blur(3px); cursor: pointer; }
+  .dim-locked-label { font-size: 0.65rem; color: var(--accent); text-align: right; cursor: pointer; white-space: nowrap; }
+
+  /* Unlock overlay */
+  .unlock-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(4,4,7,0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+  .unlock-overlay.visible { opacity: 1; pointer-events: all; }
+  .unlock-title { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; }
+  .unlock-sub { font-size: 0.85rem; color: var(--muted); text-align: center; max-width: 280px; }
+  .unlock-btn { background: var(--accent); color: white; padding: 12px 28px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; border: none; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+  .unlock-btn:hover { opacity: 0.85; }
+
+  /* Right: hero text */
+  .hero-text {
+    padding: 80px 80px 80px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .ht-label { font-size: 0.72rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; margin-bottom: 20px; }
+  .ht-h1 {
+    font-size: clamp(2.5rem, 4vw, 3.8rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+  .ht-h1 em { color: var(--accent); font-style: normal; }
+  .ht-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 400px;
+  }
+
+  /* Scan input */
+  .scan-form { display: flex; flex-direction: column; gap: 12px; max-width: 400px; }
+  .scan-form label { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .scan-form input {
+    background: rgba(14,14,24,0.6);
+    border: 1px solid rgba(123,104,238,0.2);
+    color: var(--text);
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .scan-form input:focus { border-color: rgba(123,104,238,0.5); }
+  .scan-form input::placeholder { color: var(--muted); }
+  .scan-form button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .scan-form button:hover { opacity: 0.88; transform: translateY(-1px); }
+  .scan-note { font-size: 0.72rem; color: var(--muted); }
+
+  /* Proof points */
+  .proof-strip {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .proof-item { padding: 40px 32px; border-right: 1px solid rgba(255,255,255,0.04); }
+  .proof-item:last-child { border-right: none; }
+  .proof-num { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.05em; color: var(--accent); }
+  .proof-label { font-size: 0.72rem; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  /* CTA */
+  .final { position: relative; z-index: 1; text-align: center; padding: 100px 48px; }
+  .final h2 { font-size: clamp(2.2rem, 4vw, 3.5rem); font-weight: 900; letter-spacing: -0.05em; margin-bottom: 12px; }
+  .final h2 span { color: var(--accent); }
+  .final p { color: var(--muted); margin-bottom: 32px; }
+  .final a { display: inline-block; background: var(--accent); color: white; padding: 14px 32px; border-radius: 10px; font-size: 0.92rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .final a:hover { opacity: 0.85; }
+
+  footer { position: relative; z-index: 1; padding: 28px 48px; border-top: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 1000px) {
+    .hero { grid-template-columns: 1fr; }
+    .spotlight-panel { padding: 80px 32px 40px; order: 2; }
+    .hero-text { padding: 80px 32px 40px; order: 1; }
+    .proof-strip { grid-template-columns: 1fr 1fr; }
+    .proof-item:nth-child(2) { border-right: none; }
+    footer { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="spotlight"></div>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-links">
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+    <a href="#">ZaphNews</a>
+    <a href="#">Badge</a>
+  </div>
+  <a href="/onboard" class="nav-cta">Start scanning →</a>
+</nav>
+
+<div class="hero">
+  <div class="spotlight-panel">
+    <div class="repo-card">
+      <!-- Score display -->
+      <div class="rc-top">
+        <div class="rc-avatar">👥</div>
+        <div class="rc-meta">
+          <div class="rc-name">crewAI / crewAI</div>
+          <div class="rc-url">github.com/crewAIInc/crewAI · 2 min ago</div>
+        </div>
+        <div class="rc-grade-badge grade-c">C</div>
+      </div>
+
+      <div class="rc-score-row">
+        <div class="rc-score-num">78.6</div>
+        <div class="rc-score-label">
+          <div>Grade C</div>
+          <div>Needs attention</div>
+        </div>
+      </div>
+
+      <!-- 12 dimensions, some locked -->
+      <div class="dimensions">
+        <div class="dim-row">
+          <div class="dim-label">Secrets</div>
+          <div class="dim-bar"><div class="dim-fill" style="width:90%;background:var(--green)"></div></div>
+          <div class="dim-score" style="color:var(--green)">90</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">Dependencies</div>
+          <div class="dim-bar"><div class="dim-fill" style="width:72%;background:var(--yellow)"></div></div>
+          <div class="dim-score" style="color:var(--yellow)">72</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">Agent Patterns</div>
+          <div class="dim-bar"><div class="dim-fill" style="width:61%;background:var(--orange)"></div></div>
+          <div class="dim-score" style="color:var(--orange)">61</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">SAST</div>
+          <div class="dim-bar"><div class="dim-fill" style="width:80%;background:#86efac"></div></div>
+          <div class="dim-score" style="color:#86efac">80</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">Prompt Injection</div>
+          <div class="dim-bar dim-locked"><div class="dim-fill" style="width:55%;background:var(--orange)"></div></div>
+          <div class="dim-locked-label" onclick="showUnlock()">Unlock →</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">IaC Security</div>
+          <div class="dim-bar dim-locked"><div class="dim-fill" style="width:78%;background:var(--yellow)"></div></div>
+          <div class="dim-locked-label" onclick="showUnlock()">Unlock →</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">Crypto/Auth</div>
+          <div class="dim-bar dim-locked"><div class="dim-fill" style="width:85%;background:#86efac"></div></div>
+          <div class="dim-locked-label" onclick="showUnlock()">Unlock →</div>
+        </div>
+        <div class="dim-row">
+          <div class="dim-label">Data Exposure</div>
+          <div class="dim-bar dim-locked"><div class="dim-fill" style="width:70%;background:var(--yellow)"></div></div>
+          <div class="dim-locked-label" onclick="showUnlock()">Unlock →</div>
+        </div>
+        <div class="dim-row" style="font-size:0.65rem;color:var(--muted);grid-column:1/-1;text-align:center;padding:4px 0">+ 4 more dimensions locked · <span style="color:var(--accent);cursor:pointer" onclick="showUnlock()">Scan your repo to see all 12</span></div>
+      </div>
+
+      <!-- Unlock overlay -->
+      <div class="unlock-overlay" id="unlockOverlay">
+        <div style="font-size:2rem">🔒</div>
+        <div class="unlock-title">Unlock all 12 dimensions</div>
+        <div class="unlock-sub">Scan your own repo to see the full breakdown. Free for your first 3 scans.</div>
+        <button class="unlock-btn" onclick="window.location='/onboard'">Scan your repo free →</button>
+        <div style="font-size:0.72rem;color:var(--muted);cursor:pointer" onclick="hideUnlock()">Close</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-text">
+    <div class="ht-label">AI Agent Security Scanner</div>
+    <h1 class="ht-h1">12 dimensions.<br>One <em>score.</em><br>Real risk.</h1>
+    <p class="ht-sub">ZaphScore scans your GitHub repo across every attack surface that matters for AI agents — secrets, deps, prompt injection, IaC — and distills it to one number you can act on.</p>
+
+    <div class="scan-form">
+      <label>Scan your repo</label>
+      <input type="url" id="repoInput" placeholder="https://github.com/your-org/your-agent">
+      <button onclick="scan()">See your full report →</button>
+      <div class="scan-note">3 free scans · no credit card · 60 seconds to results</div>
+    </div>
+  </div>
+</div>
+
+<div class="proof-strip">
+  <div class="proof-item">
+    <div class="proof-num">58%</div>
+    <div class="proof-label">of repos are F-grade. Most teams don't know.</div>
+  </div>
+  <div class="proof-item">
+    <div class="proof-num">12</div>
+    <div class="proof-label">security dimensions checked per scan.</div>
+  </div>
+  <div class="proof-item">
+    <div class="proof-num">60s</div>
+    <div class="proof-label">to your complete score. No waiting.</div>
+  </div>
+  <div class="proof-item">
+    <div class="proof-num">200K</div>
+    <div class="proof-label">AI agent repos at risk right now.</div>
+  </div>
+</div>
+
+<div class="final">
+  <h2>Your repo.<br><span>Your score.</span></h2>
+  <p>3 free scans. Start now. No card needed.</p>
+  <a href="/onboard">Get your score →</a>
+</div>
+
+<footer>
+  <div>© 2026 Zaphenath · ZaphScore</div>
+  <div>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</footer>
+
+<script>
+// Mouse spotlight
+document.addEventListener('mousemove', e => {
+  const s = document.getElementById('spotlight');
+  s.style.left = e.clientX + 'px';
+  s.style.top = e.clientY + 'px';
+});
+
+function showUnlock() { document.getElementById('unlockOverlay').classList.add('visible'); }
+function hideUnlock() { document.getElementById('unlockOverlay').classList.remove('visible'); }
+
+function scan() {
+  const url = document.getElementById('repoInput').value.trim();
+  if (!url.includes('github.com/')) {
+    document.getElementById('repoInput').style.borderColor = 'rgba(239,68,68,0.4)';
+    return;
+  }
+  window.location = '/onboard?repo=' + encodeURIComponent(url);
+}
+document.getElementById('repoInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') scan();
+  document.getElementById('repoInput').style.borderColor = '';
+});
+</script>
+</body>
+</html>

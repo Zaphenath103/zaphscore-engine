@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0c0a;
+    --terminal-bg: #0d110d;
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-glow: rgba(0,255,65,0.15);
+    --amber: #ffb000;
+    --red: #ff3333;
+    --muted: #3a4a3a;
+    --text: #c0e0c0;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* Matrix rain canvas */
+  #matrix { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.04; pointer-events: none; }
+
+  /* Nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(0,255,65,0.08);
+    background: rgba(10,12,10,0.95);
+    backdrop-filter: blur(10px);
+  }
+  .logo { color: var(--green); font-weight: 800; font-size: 1rem; letter-spacing: 0.05em; }
+  .logo::before { content: '> '; opacity: 0.5; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { color: var(--muted); font-size: 0.78rem; text-decoration: none; transition: color 0.15s; }
+  .nav-links a::before { content: './'; color: rgba(0,255,65,0.3); }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid rgba(0,255,65,0.4);
+    padding: 8px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover { background: var(--green-glow); border-color: var(--green); box-shadow: 0 0 16px rgba(0,255,65,0.2); }
+
+  /* Hero */
+  .hero {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 40px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+    gap: 80px;
+  }
+
+  /* Left: headline */
+  .hero-left { flex: 1; min-width: 0; }
+  .terminal-label {
+    font-size: 0.7rem;
+    color: rgba(0,255,65,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+  }
+  .hero-h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: #e8ffe8;
+    margin-bottom: 20px;
+  }
+  .hero-h1 em { color: var(--green); font-style: normal; text-shadow: 0 0 40px rgba(0,255,65,0.4); }
+  .hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 420px;
+  }
+
+  /* Scan command input */
+  .cmd-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--terminal-bg);
+    border: 1px solid rgba(0,255,65,0.2);
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,255,65,0.05);
+  }
+  .cmd-prompt {
+    padding: 14px 12px 14px 16px;
+    color: var(--green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border-right: 1px solid rgba(0,255,65,0.1);
+  }
+  .cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e8ffe8;
+    padding: 14px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    outline: none;
+  }
+  .cmd-input::placeholder { color: rgba(0,255,65,0.2); }
+  .cmd-submit {
+    background: var(--green);
+    color: #0a0c0a;
+    border: none;
+    padding: 14px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s;
+  }
+  .cmd-submit:hover { opacity: 0.85; }
+  .cmd-hint { font-size: 0.68rem; color: var(--muted); margin-top: 8px; padding-left: 4px; }
+
+  /* Right: terminal window */
+  .hero-right { flex: 0 0 420px; }
+  .terminal-window {
+    background: var(--terminal-bg);
+    border: 1px solid rgba(0,255,65,0.12);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,255,65,0.06), 0 32px 80px rgba(0,0,0,0.6);
+  }
+  .terminal-titlebar {
+    background: #111811;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(0,255,65,0.08);
+  }
+  .tb-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .tb-red { background: #ff5f56; }
+  .tb-yellow { background: #ffbd2e; }
+  .tb-green { background: #27c93f; }
+  .tb-title { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
+  .terminal-body { padding: 20px; min-height: 360px; font-size: 0.78rem; line-height: 2; }
+  .t-line { display: block; }
+  .t-prompt { color: rgba(0,255,65,0.5); }
+  .t-cmd { color: #e8ffe8; }
+  .t-output { color: var(--muted); }
+  .t-key { color: rgba(0,255,65,0.6); }
+  .t-val-red { color: var(--red); font-weight: 700; }
+  .t-val-amber { color: var(--amber); font-weight: 700; }
+  .t-val-green { color: var(--green); font-weight: 700; }
+  .t-section { color: rgba(0,255,65,0.3); }
+  .t-cursor {
+    display: inline-block;
+    width: 7px; height: 14px;
+    background: var(--green);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Score reveal animation */
+  .score-reveal {
+    margin-top: 16px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(0,255,65,0.08);
+    border-bottom: 1px solid rgba(0,255,65,0.08);
+  }
+  .score-big {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--amber);
+    letter-spacing: -0.04em;
+    text-shadow: 0 0 30px rgba(255,176,0,0.3);
+  }
+  .score-grade-label { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  /* Stats */
+  .stats-row {
+    position: relative; z-index: 1;
+    display: flex;
+    border-top: 1px solid rgba(0,255,65,0.06);
+    border-bottom: 1px solid rgba(0,255,65,0.06);
+  }
+  .stat-block {
+    flex: 1;
+    padding: 40px 32px;
+    border-right: 1px solid rgba(0,255,65,0.06);
+    text-align: center;
+  }
+  .stat-block:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,255,65,0.2);
+  }
+  .stat-label { font-size: 0.68rem; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* Comparison table */
+  .comparison { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 80px 40px; }
+  .comp-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #e8ffe8;
+    margin-bottom: 8px;
+  }
+  .comp-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 32px; font-family: 'Inter', sans-serif; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: center; border-bottom: 1px solid rgba(0,255,65,0.08); }
+  thead th:first-child { text-align: left; }
+  thead th.highlight { color: var(--green); }
+  tbody td { padding: 12px 16px; font-size: 0.82rem; border-bottom: 1px solid rgba(0,255,65,0.04); color: var(--text); text-align: center; }
+  tbody td:first-child { text-align: left; color: var(--muted); font-size: 0.78rem; }
+  tbody td.highlight { color: var(--green); }
+  .check { color: var(--green); }
+  .cross { color: rgba(255,255,255,0.15); }
+  .partial { color: var(--amber); }
+
+  /* CTA */
+  .cta { position: relative; z-index: 1; text-align: center; padding: 80px 40px; }
+  .cta-title { font-family: 'Inter', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: -0.04em; color: #e8ffe8; margin-bottom: 12px; }
+  .cta-title em { color: var(--green); font-style: normal; }
+  .cta-sub { font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--muted); margin-bottom: 32px; }
+
+  footer { position: relative; z-index: 1; padding: 32px 40px; border-top: 1px solid rgba(0,255,65,0.06); display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 20px; }
+  footer a:hover { color: var(--green); }
+
+  @media (max-width: 900px) {
+    .hero { flex-direction: column; gap: 48px; padding: 100px 24px 60px; }
+    .hero-right { flex: 0 0 auto; width: 100%; }
+    .stats-row { flex-wrap: wrap; }
+    .stat-block { min-width: 50%; }
+    .comparison { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-links">
+    <a href="#">docs</a>
+    <a href="#">pricing</a>
+    <a href="#">news</a>
+    <a href="#">badge</a>
+  </div>
+  <a href="#" class="nav-cta">$ scan --free</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="terminal-label">// AI agent security scanner</div>
+    <h1 class="hero-h1">One command.<br><em>Know your risk.</em></h1>
+    <p class="hero-sub">ZaphScore runs 12 security checks across your agent repo and outputs one score. 58% of repos fail. Find out if yours does too.</p>
+
+    <div class="cmd-bar">
+      <div class="cmd-prompt">$</div>
+      <input class="cmd-input" id="urlInput" type="text" placeholder="https://github.com/your-org/your-agent" />
+      <button class="cmd-submit" onclick="runScan()">RUN SCAN</button>
+    </div>
+    <div class="cmd-hint">// 3 free scans — no account required</div>
+  </div>
+
+  <div class="hero-right">
+    <div class="terminal-window">
+      <div class="terminal-titlebar">
+        <div class="tb-dot tb-red"></div>
+        <div class="tb-dot tb-yellow"></div>
+        <div class="tb-dot tb-green"></div>
+        <span class="tb-title">zaphscore — scan output</span>
+      </div>
+      <div class="terminal-body" id="termBody">
+        <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">zaph scan github.com/crewAI/crewAI</span></span>
+        <span class="t-line t-output">Initializing scan engine v2.4.1...</span>
+        <span class="t-line t-output">Cloning repository... <span style="color:var(--green)">done</span></span>
+        <span class="t-line"> </span>
+        <span class="t-line t-section">── SECRETS SCAN ────────────────</span>
+        <span class="t-line"><span class="t-key">leaked_keys</span>      <span class="t-val-green">0 found</span></span>
+        <span class="t-line"><span class="t-key">env_exposure</span>     <span class="t-val-amber">2 warnings</span></span>
+        <span class="t-line"> </span>
+        <span class="t-line t-section">── DEPENDENCY RISK ─────────────</span>
+        <span class="t-line"><span class="t-key">critical_cves</span>    <span class="t-val-amber">3 medium</span></span>
+        <span class="t-line"><span class="t-key">outdated_deps</span>    <span class="t-val-amber">12 packages</span></span>
+        <span class="t-line"> </span>
+        <span class="t-line t-section">── AGENT PATTERNS ──────────────</span>
+        <span class="t-line"><span class="t-key">prompt_injection</span> <span class="t-val-red">2 vectors</span></span>
+        <span class="t-line"><span class="t-key">unconstrained_tools</span> <span class="t-val-amber">4 calls</span></span>
+        <span class="t-line"> </span>
+        <span class="t-line t-section">── SAST ────────────────────────</span>
+        <span class="t-line"><span class="t-key">high_severity</span>    <span class="t-val-amber">1 finding</span></span>
+        <span class="t-line"><span class="t-key">medium_severity</span>  <span class="t-val-amber">6 findings</span></span>
+        <span class="t-line"> </span>
+        <div class="score-reveal">
+          <div class="score-big" id="termScore">78.6</div>
+          <div class="score-grade-label">Grade C — Needs attention · crewAI/crewAI</div>
+        </div>
+        <span class="t-line" style="margin-top:12px"><span class="t-output">Report saved. Run </span><span class="t-val-green">zaph report --pdf</span></span>
+        <span class="t-line"><span class="t-prompt">$ </span><span class="t-cursor"></span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="stats-row">
+  <div class="stat-block">
+    <div class="stat-num">58%</div>
+    <div class="stat-label">fail rate (F-grade repos)</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num">12</div>
+    <div class="stat-label">scan dimensions</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num">200K</div>
+    <div class="stat-label">repos at risk</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num">60s</div>
+    <div class="stat-label">scan time</div>
+  </div>
+</div>
+
+<div class="comparison">
+  <div class="comp-title">How we stack up</div>
+  <div class="comp-sub">Honest comparison. We win on agent-specific features. Others win on enterprise integrations.</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th class="highlight">ZaphScore</th>
+        <th>Snyk</th>
+        <th>Semgrep</th>
+        <th>Dependabot</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Agent-specific scanning</td>
+        <td class="highlight check">✓</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+      </tr>
+      <tr>
+        <td>Single ZaphScore number</td>
+        <td class="highlight check">✓</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+      </tr>
+      <tr>
+        <td>PDF report</td>
+        <td class="highlight check">✓ Pro</td>
+        <td class="partial">Enterprise</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+      </tr>
+      <tr>
+        <td>README badge</td>
+        <td class="highlight check">✓</td>
+        <td class="partial">✓</td>
+        <td class="cross">–</td>
+        <td class="cross">–</td>
+      </tr>
+      <tr>
+        <td>Secrets detection</td>
+        <td class="highlight check">✓</td>
+        <td class="check">✓</td>
+        <td class="partial">partial</td>
+        <td class="cross">–</td>
+      </tr>
+      <tr>
+        <td>Dependency CVEs</td>
+        <td class="highlight check">✓</td>
+        <td class="check">✓</td>
+        <td class="cross">–</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Free tier</td>
+        <td class="highlight">3 scans/mo</td>
+        <td class="partial">limited</td>
+        <td class="check">OSS free</td>
+        <td class="check">free</td>
+      </tr>
+      <tr>
+        <td>Price/mo (paid)</td>
+        <td class="highlight">$99</td>
+        <td>$79+</td>
+        <td>$40+</td>
+        <td class="check">free</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="cta">
+  <div class="cta-title">Run your first scan.<br><em>It's free.</em></div>
+  <div class="cta-sub">$ zaph scan &lt;your-repo&gt; — returns in 60 seconds</div>
+  <div class="cmd-bar" style="max-width:520px; margin:0 auto">
+    <div class="cmd-prompt">$</div>
+    <input class="cmd-input" type="text" placeholder="https://github.com/your-org/your-agent" />
+    <button class="cmd-submit" onclick="window.location='/onboard'">EXECUTE</button>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Zaphenath · ZaphScore v2.4.1</div>
+  <div>
+    <a href="/pricing">pricing</a>
+    <a href="/docs">docs</a>
+    <a href="/zaphnews">news</a>
+    <a href="/terms">terms</a>
+    <a href="/privacy">privacy</a>
+  </div>
+</footer>
+
+<script>
+// Matrix rain
+(function() {
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const cols = Math.floor(canvas.width / 16);
+  const drops = Array(cols).fill(1);
+  const chars = '01アイウエオカキクケコzaphscoreRISKSECURE'.split('');
+  function draw() {
+    ctx.fillStyle = 'rgba(10,12,10,0.04)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = '12px JetBrains Mono, monospace';
+    drops.forEach((y, i) => {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(char, i * 16, y * 16);
+      if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }
+  setInterval(draw, 50);
+  window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+})();
+
+function runScan() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url.includes('github.com/')) {
+    document.getElementById('urlInput').style.borderColor = 'rgba(255,51,51,0.4)';
+    return;
+  }
+  window.location = '/onboard?repo=' + encodeURIComponent(url);
+}
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runScan();
+});
+</script>
+</body>
+</html>

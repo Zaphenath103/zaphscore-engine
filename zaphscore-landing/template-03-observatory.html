@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #000005;
+    --text: #f5f5f7;
+    --muted: #86868b;
+    --accent: #0071e3;
+    --accent2: #6e6cef;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Nav — Apple-style minimal */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    background: rgba(0,0,5,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .nav-center { display: flex; gap: 28px; }
+  .nav-center a { color: var(--muted); font-size: 0.82rem; text-decoration: none; transition: color 0.2s; letter-spacing: -0.01em; }
+  .nav-center a:hover { color: var(--text); }
+  .nav-right a {
+    color: var(--accent);
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .nav-right a:hover { opacity: 0.7; }
+
+  /* Hero — full viewport, Apple scale */
+  .hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 56px 40px 0;
+    overflow: hidden;
+  }
+
+  /* Gradient orb background */
+  .hero-orb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(110,108,239,0.12) 0%, rgba(0,113,227,0.06) 40%, transparent 70%);
+    animation: orbFloat 8s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes orbFloat {
+    from { transform: translate(-50%, -60%) scale(1); }
+    to { transform: translate(-50%, -62%) scale(1.04); }
+  }
+
+  /* Eyebrow */
+  .hero-eyebrow {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.2s forwards;
+    letter-spacing: -0.01em;
+  }
+
+  /* Giant headline */
+  .hero-h1 {
+    font-size: clamp(4rem, 9vw, 8rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.35s forwards;
+  }
+  .hero-h1 .line1 { display: block; }
+  .hero-h1 .line2 {
+    display: block;
+    background: linear-gradient(135deg, #6e6cef 0%, #0071e3 50%, #6e6cef 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.35s forwards, shimmer 4s linear 1.5s infinite;
+  }
+  @keyframes shimmer {
+    from { background-position: 0% center; }
+    to { background-position: 200% center; }
+  }
+
+  .hero-sub {
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 400;
+    color: var(--muted);
+    max-width: 600px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+
+  /* CTA */
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 64px;
+    opacity: 0;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.65s forwards;
+  }
+  .btn-blue {
+    background: var(--accent);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 100px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-blue:hover { background: #0077ed; transform: scale(1.02); }
+  .btn-clear {
+    background: transparent;
+    color: var(--accent);
+    padding: 16px 32px;
+    border-radius: 100px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid rgba(0,113,227,0.3);
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-clear:hover { border-color: var(--accent); background: rgba(0,113,227,0.06); }
+
+  /* Score reveal visual in hero */
+  .score-display {
+    opacity: 0;
+    animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) 0.8s forwards;
+    margin-bottom: 40px;
+  }
+  .score-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .score-chip {
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+  }
+  .sc-name { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; letter-spacing: -0.01em; }
+  .sc-score { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; }
+  .sc-score.grade-c { color: #f59e0b; }
+  .sc-score.grade-d { color: #fb923c; }
+  .sc-score.grade-f { color: #ef4444; }
+  .sc-score.grade-a { color: #34d399; }
+  .sc-score.blurred { filter: blur(6px); color: #ef4444; }
+
+  /* Scroll arrow */
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: riseIn 0.8s ease 1.2s forwards;
+  }
+  .scroll-arrow { animation: bounce 2s ease infinite; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+  /* Section: the number */
+  .section-full {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-full::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1000px; height: 1000px;
+    background: radial-gradient(ellipse, rgba(0,113,227,0.06) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .mega-stat {
+    font-size: clamp(6rem, 14vw, 12rem);
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    color: #ef4444;
+    line-height: 1;
+    text-shadow: 0 0 120px rgba(239,68,68,0.2);
+    position: relative;
+  }
+  .mega-label {
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-top: 8px;
+    color: var(--text);
+  }
+  .mega-sub { color: var(--muted); font-size: 1.1rem; margin-top: 16px; max-width: 480px; }
+
+  /* Features: horizontal scroll snap */
+  .features-section { padding: 120px 0; }
+  .features-header { text-align: center; padding: 0 40px; margin-bottom: 64px; }
+  .feat-title { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 800; letter-spacing: -0.04em; }
+  .feat-sub { color: var(--muted); font-size: 1.05rem; margin-top: 12px; }
+  .cards-track { display: flex; gap: 24px; padding: 0 40px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .cards-track::-webkit-scrollbar { display: none; }
+  .feat-card {
+    flex: 0 0 320px;
+    scroll-snap-align: start;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 40px 32px;
+    transition: border-color 0.3s;
+  }
+  .feat-card:hover { border-color: rgba(255,255,255,0.16); }
+  .feat-icon { font-size: 2.5rem; margin-bottom: 20px; }
+  .feat-name { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+  .feat-desc { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+  /* Final CTA */
+  .final-cta {
+    text-align: center;
+    padding: 160px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .final-cta::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(110,108,239,0.08) 0%, transparent 60%);
+  }
+  .final-title {
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1.05;
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .final-sub { color: var(--muted); font-size: 1.1rem; position: relative; margin-bottom: 48px; }
+  .scan-form { display: flex; gap: 0; max-width: 520px; margin: 0 auto; border-radius: 100px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); }
+  .scan-form input { flex: 1; background: transparent; border: none; color: var(--text); padding: 16px 24px; font-size: 0.9rem; outline: none; font-family: inherit; }
+  .scan-form input::placeholder { color: var(--muted); }
+  .scan-form button { background: var(--accent); color: white; border: none; padding: 16px 28px; font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap; letter-spacing: -0.01em; transition: opacity 0.2s; font-family: inherit; }
+  .scan-form button:hover { opacity: 0.85; }
+
+  /* Footer */
+  footer { border-top: 0.5px solid rgba(255,255,255,0.06); padding: 40px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--muted); }
+  .footer-links { display: flex; gap: 24px; }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--text); }
+
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-center { display: none; }
+    .hero { padding: 56px 24px 0; }
+    .hero-h1 { font-size: clamp(3rem, 12vw, 6rem); }
+    .features-header { padding: 0 24px; }
+    .cards-track { padding: 0 24px; }
+    .feat-card { flex: 0 0 280px; }
+    .final-cta { padding: 100px 24px; }
+    footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-center">
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+    <a href="#">ZaphNews</a>
+    <a href="#">Badge</a>
+    <a href="#">Status</a>
+  </div>
+  <div class="nav-right">
+    <a href="#">Start free →</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-orb"></div>
+
+  <div class="hero-eyebrow">ZaphScore — AI Agent Security Scanner</div>
+
+  <h1 class="hero-h1">
+    <span class="line1">Know your</span>
+    <span class="line2">risk score.</span>
+  </h1>
+
+  <p class="hero-sub">12 security checks. One number. Under 60 seconds. Built for the age of AI agents.</p>
+
+  <div class="score-display">
+    <div class="score-row">
+      <div class="score-chip">
+        <span class="sc-name">crewAI</span>
+        <span class="sc-score grade-c">78.6 C</span>
+      </div>
+      <div class="score-chip">
+        <span class="sc-name">LangChain</span>
+        <span class="sc-score grade-d">69.4 D</span>
+      </div>
+      <div class="score-chip">
+        <span class="sc-name">Your repo</span>
+        <span class="sc-score blurred">?? F</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-cta">
+    <a href="/onboard" class="btn-blue">Scan your repo free →</a>
+    <a href="/docs" class="btn-clear">See how it works</a>
+  </div>
+
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <span class="scroll-arrow">↓</span>
+  </div>
+</section>
+
+<section class="section-full">
+  <div>
+    <div class="mega-stat" id="fearCounter">0%</div>
+    <div class="mega-label">of AI repos are F-grade</div>
+    <p class="mega-sub" style="margin:16px auto 0">That's 1 in 2 codebases shipping AI agents with critical vulnerabilities your team has never seen.</p>
+  </div>
+</section>
+
+<section class="features-section">
+  <div class="features-header">
+    <h2 class="feat-title">What we scan</h2>
+    <p class="feat-sub">12 dimensions. Every one matters.</p>
+  </div>
+  <div class="cards-track">
+    <div class="feat-card">
+      <div class="feat-icon">🔐</div>
+      <div class="feat-name">Secrets & Credentials</div>
+      <div class="feat-desc">Detects leaked API keys, tokens, and hardcoded credentials before they hit production or get indexed by public scanners.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📦</div>
+      <div class="feat-name">Dependency CVEs</div>
+      <div class="feat-desc">Every package in your agent's dependency tree cross-referenced against the NVD. Know which CVE is one pip install away.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-name">Agent Patterns</div>
+      <div class="feat-desc">LangChain eval() calls, unconstrained tool use, missing rate limits on agent actions — the attack surface nobody else checks.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🧬</div>
+      <div class="feat-name">Prompt Injection</div>
+      <div class="feat-desc">Surfaces in your code where user input flows directly into LLM prompts without sanitization. The OWASP LLM Top 10 #1.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🏗️</div>
+      <div class="feat-name">IaC Misconfigs</div>
+      <div class="feat-desc">Dockerfile USER, Kubernetes RBAC, Terraform IAM — infrastructure that gives attackers a path to your agent runtime.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <div class="feat-name">SAST Analysis</div>
+      <div class="feat-desc">Static analysis across Python, JS, and YAML. SQL injection, SSRF, command injection — the classics don't go away just because you're using Claude.</div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <h2 class="final-title">Your score is<br>waiting.</h2>
+  <p class="final-sub">3 free scans. No credit card. Results in under 60 seconds.</p>
+  <div class="scan-form">
+    <input type="url" placeholder="https://github.com/your-org/your-agent" id="finalInput">
+    <button onclick="submitScan()">Scan free</button>
+  </div>
+</section>
+
+<footer>
+  <div class="logo" style="font-size:1rem; font-weight:700; color:var(--muted)">ZaphScore</div>
+  <div class="footer-links">
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+  <div>© 2026 Zaphenath</div>
+</footer>
+
+<script>
+// Animate fear counter on scroll into view
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      animateCounter();
+      observer.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+const counterEl = document.getElementById('fearCounter');
+if (counterEl) observer.observe(counterEl);
+
+function animateCounter() {
+  let start = 0;
+  const end = 58;
+  const duration = 2000;
+  const startTime = performance.now();
+  function step(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 4);
+    counterEl.textContent = Math.round(eased * end) + '%';
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function submitScan() {
+  const url = document.getElementById('finalInput').value.trim();
+  if (!url.includes('github.com/')) return;
+  window.location = '/onboard?repo=' + encodeURIComponent(url);
+}
+document.getElementById('finalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitScan();
+});
+</script>
+</body>
+</html>

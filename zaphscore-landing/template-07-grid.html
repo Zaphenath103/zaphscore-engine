@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #070709;
+    --text: #f0f0f8;
+    --muted: #55556a;
+    --border: #141420;
+    --accent: #5c5cff;
+    --green: #22d3a0;
+    --yellow: #f59e0b;
+    --orange: #fb923c;
+    --red: #ef4444;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Fixed overlay nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(7,7,9,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .logo { font-size: 1rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .nav-right { display: flex; align-items: center; gap: 20px; }
+  .nav-right a { color: var(--muted); font-size: 0.82rem; text-decoration: none; }
+  .nav-right a:hover { color: var(--text); }
+  .nav-btn { background: var(--accent); color: white; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .nav-btn:hover { opacity: 0.85; }
+
+  /* Hero — title over the grid */
+  .hero {
+    padding-top: 56px;
+    position: relative;
+  }
+  .hero-overlay {
+    position: absolute; top: 56px; left: 0; right: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 48px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(7,7,9,0.95) 0%, rgba(7,7,9,0.7) 50%, rgba(7,7,9,0) 100%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: rgba(92,92,255,0.1);
+    border: 1px solid rgba(92,92,255,0.2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 20px;
+    pointer-events: all;
+  }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: p 2s ease infinite; }
+  @keyframes p { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .hero-h1 {
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1.02;
+    margin-bottom: 16px;
+    pointer-events: none;
+  }
+  .hero-h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 440px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+    pointer-events: none;
+  }
+  .hero-scan {
+    display: flex;
+    gap: 0;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(92,92,255,0.2);
+    pointer-events: all;
+    background: rgba(7,7,9,0.8);
+    backdrop-filter: blur(10px);
+  }
+  .hero-scan input { flex:1; background:transparent; border:none; color:var(--text); padding:13px 16px; font-size:0.85rem; outline:none; font-family:inherit; }
+  .hero-scan input::placeholder { color: var(--muted); }
+  .hero-scan button { background:var(--accent); color:white; border:none; padding:13px 22px; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity 0.2s; }
+  .hero-scan button:hover { opacity:0.85; }
+
+  /* THE DATA WALL */
+  .data-wall {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 3px;
+    padding: 3px;
+    margin-top: 200px; /* space for hero overlay */
+  }
+
+  .wall-cell {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s, filter 0.3s;
+    overflow: hidden;
+  }
+  .wall-cell:hover { transform: scale(1.05); z-index: 5; filter: brightness(1.3); }
+  .cell-score { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.04em; }
+  .cell-name { font-size: 0.55rem; color: rgba(255,255,255,0.5); margin-top: 3px; text-align: center; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
+
+  .cell-grade-a { background: rgba(34,211,160,0.12); border: 1px solid rgba(34,211,160,0.2); }
+  .cell-grade-a .cell-score { color: var(--green); }
+  .cell-grade-b { background: rgba(134,239,172,0.08); border: 1px solid rgba(134,239,172,0.15); }
+  .cell-grade-b .cell-score { color: #86efac; }
+  .cell-grade-c { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); }
+  .cell-grade-c .cell-score { color: var(--yellow); }
+  .cell-grade-d { background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.2); }
+  .cell-grade-d .cell-score { color: var(--orange); }
+  .cell-grade-f { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.15); }
+  .cell-grade-f .cell-score { color: var(--red); }
+  .cell-locked { background: rgba(92,92,255,0.06); border: 1px dashed rgba(92,92,255,0.2); cursor: pointer; }
+  .cell-locked .cell-score { filter: blur(4px); color: rgba(255,255,255,0.4); font-size: 1rem; }
+  .cell-locked:hover .cell-score { filter: blur(0); color: var(--accent); }
+  .cell-locked .cell-name { color: var(--accent); font-size: 0.58rem; }
+
+  /* Tooltip */
+  .cell-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111120;
+    border: 1px solid rgba(92,92,255,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 100;
+    color: var(--text);
+  }
+  .wall-cell:hover .cell-tooltip { opacity: 1; }
+
+  /* Below the wall */
+  .below-wall { max-width: 1000px; margin: 0 auto; padding: 80px 48px; }
+  .bw-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 48px; flex-wrap: wrap; gap: 24px; }
+  .bw-title { font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 900; letter-spacing: -0.04em; }
+  .bw-sub { color: var(--muted); font-size: 0.9rem; line-height: 1.6; max-width: 360px; }
+
+  /* Grade bars */
+  .grade-breakdown { display: flex; flex-direction: column; gap: 10px; margin-bottom: 64px; }
+  .gb-row { display: flex; align-items: center; gap: 12px; }
+  .gb-label { font-size: 0.85rem; font-weight: 800; width: 20px; }
+  .gb-bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .gb-bar { height: 100%; border-radius: 4px; }
+  .gb-pct { font-size: 0.75rem; color: var(--muted); width: 36px; text-align: right; }
+  .gb-count { font-size: 0.72rem; color: var(--muted); width: 60px; text-align: right; }
+
+  /* CTA */
+  .final-cta { text-align: center; padding: 60px 0; border-top: 1px solid var(--border); }
+  .fc-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 12px; }
+  .fc-title span { color: var(--accent); }
+  .fc-sub { color: var(--muted); margin-bottom: 28px; font-size: 0.9rem; }
+  .fc-btn { display: inline-block; background: var(--accent); color: white; padding: 14px 32px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .fc-btn:hover { opacity: 0.85; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 48px; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 600px) {
+    .data-wall { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); margin-top: 280px; }
+    .hero-overlay { padding: 40px 24px; }
+    .below-wall { padding: 60px 24px; }
+    footer { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-right">
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+    <a href="#">ZaphNews</a>
+    <a href="/onboard" class="nav-btn">Scan free →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-overlay">
+    <div class="hero-badge"><div class="pulse"></div>Live data — 1,247 repos scanned</div>
+    <h1 class="hero-h1">The AI agent<br><span>security map.</span></h1>
+    <p class="hero-sub">Every cell is a real repo. Colors show threat level. Zoom in on the red — that's 58% of the ecosystem.</p>
+    <div class="hero-scan">
+      <input type="url" id="scanInput" placeholder="github.com/your-org/your-agent">
+      <button onclick="addYourRepo()">Add yours →</button>
+    </div>
+  </div>
+
+  <div class="data-wall" id="dataWall">
+    <!-- Generated by JS -->
+  </div>
+</div>
+
+<div class="below-wall">
+  <div class="bw-header">
+    <div>
+      <h2 class="bw-title">The ecosystem<br>is in trouble.</h2>
+    </div>
+    <p class="bw-sub">We've scanned 1,247 public AI agent repositories. 58% are F-grade. Only 5% achieve an A. The threat is systemic, not individual.</p>
+  </div>
+
+  <div class="grade-breakdown">
+    <div class="gb-row">
+      <div class="gb-label" style="color:var(--green)">A</div>
+      <div class="gb-bar-bg"><div class="gb-bar" style="width:5%;background:var(--green)"></div></div>
+      <div class="gb-pct">5%</div>
+      <div class="gb-count">62 repos</div>
+    </div>
+    <div class="gb-row">
+      <div class="gb-label" style="color:#86efac">B</div>
+      <div class="gb-bar-bg"><div class="gb-bar" style="width:12%;background:#86efac"></div></div>
+      <div class="gb-pct">12%</div>
+      <div class="gb-count">150 repos</div>
+    </div>
+    <div class="gb-row">
+      <div class="gb-label" style="color:var(--yellow)">C</div>
+      <div class="gb-bar-bg"><div class="gb-bar" style="width:25%;background:var(--yellow)"></div></div>
+      <div class="gb-pct">25%</div>
+      <div class="gb-count">312 repos</div>
+    </div>
+    <div class="gb-row">
+      <div class="gb-label" style="color:var(--orange)">D</div>
+      <div class="gb-bar-bg"><div class="gb-bar" style="width:0%;background:var(--orange);transition:width 1.5s ease 0.5s" id="dBar"></div></div>
+      <div class="gb-pct">0%</div>
+      <div class="gb-count">0 repos</div>
+    </div>
+    <div class="gb-row">
+      <div class="gb-label" style="color:var(--red)">F</div>
+      <div class="gb-bar-bg"><div class="gb-bar" style="width:0%;background:var(--red);transition:width 1.5s ease 0.7s" id="fBar"></div></div>
+      <div class="gb-pct" id="fPct">0%</div>
+      <div class="gb-count" id="fCount">0 repos</div>
+    </div>
+  </div>
+
+  <div class="final-cta">
+    <div class="fc-title">Where does your repo<br><span>appear on the map?</span></div>
+    <p class="fc-sub">Scan free. See your exact position in the ecosystem.</p>
+    <a href="/onboard" class="fc-btn">Get your score →</a>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Zaphenath · ZaphScore</div>
+  <div>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</footer>
+
+<script>
+// Generate the data wall
+const repos = [
+  // Known real repos
+  {name:'crewAI', score:78.6}, {name:'langchain', score:69.4},
+  {name:'storm', score:48.9}, {name:'swarm', score:51.8},
+  {name:'autogen', score:64.1}, {name:'phidata', score:73.2},
+  {name:'pydantic-ai', score:88.2}, {name:'claude-sdk', score:91.7},
+  {name:'dspy', score:71.4}, {name:'haystack', score:82.1},
+  {name:'agentlabs', score:44.3}, {name:'superagent', score:56.8},
+  {name:'fixie-ai', score:67.9}, {name:'cognitivelab', score:38.1},
+  {name:'griptape', score:79.3}, {name:'semantic-kernel', score:85.6},
+];
+
+// Fill out the grid with ~200 cells
+const grades = ['a','b','c','d','d','f','f','f']; // weighted to show reality
+const allCells = [...repos];
+while (allCells.length < 200) {
+  const g = grades[Math.floor(Math.random() * grades.length)];
+  const score = g === 'a' ? 90 + Math.random()*10 :
+                g === 'b' ? 80 + Math.random()*10 :
+                g === 'c' ? 70 + Math.random()*10 :
+                g === 'd' ? 60 + Math.random()*10 :
+                            Math.random()*60;
+  allCells.push({name: '', score});
+}
+
+// Add "your repo" locked cell
+allCells.push({name: 'your repo', score: null, locked: true});
+
+// Shuffle
+for (let i = allCells.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [allCells[i], allCells[j]] = [allCells[j], allCells[i]];
+}
+
+function gradeClass(s) {
+  if (s >= 90) return 'a';
+  if (s >= 80) return 'b';
+  if (s >= 70) return 'c';
+  if (s >= 60) return 'd';
+  return 'f';
+}
+
+const wall = document.getElementById('dataWall');
+allCells.forEach(cell => {
+  const div = document.createElement('div');
+  if (cell.locked) {
+    div.className = 'wall-cell cell-locked';
+    div.innerHTML = `<div class="cell-score">??.?</div><div class="cell-name">→ scan yours</div>`;
+    div.onclick = () => { window.location = '/onboard'; };
+  } else {
+    const g = gradeClass(cell.score);
+    div.className = `wall-cell cell-grade-${g}`;
+    div.innerHTML = `<div class="cell-score">${cell.score.toFixed(1)}</div>
+                     <div class="cell-name">${cell.name || '●'}</div>
+                     ${cell.name ? `<div class="cell-tooltip">${cell.name} — ${cell.score.toFixed(1)} ${g.toUpperCase()}</div>` : ''}`;
+  }
+  wall.appendChild(div);
+});
+
+// Animate grade bars
+setTimeout(() => {
+  document.getElementById('dBar').style.width = '58%';
+  document.getElementById('fBar').style.width = '58%';
+  document.getElementById('fPct').textContent = '58%';
+  document.getElementById('fCount').textContent = '723 repos';
+}, 400);
+
+function addYourRepo() {
+  const url = document.getElementById('scanInput').value.trim();
+  const full = url.startsWith('http') ? url : 'https://' + url;
+  if (!full.includes('github.com/')) { document.getElementById('scanInput').style.borderColor = 'rgba(239,68,68,0.4)'; return; }
+  window.location = '/onboard?repo=' + encodeURIComponent(full);
+}
+document.getElementById('scanInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addYourRepo();
+  document.getElementById('scanInput').style.borderColor = '';
+});
+</script>
+</body>
+</html>

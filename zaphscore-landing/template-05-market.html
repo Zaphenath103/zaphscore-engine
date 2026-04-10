@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Market</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #08080f;
+    --surface: #0d0d18;
+    --card: #111120;
+    --border: #1a1a2e;
+    --text: #e8e8f0;
+    --muted: #5a5a7a;
+    --accent: #818cf8;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --orange: #fb923c;
+    --red: #f87171;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  nav {
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,8,15,0.95);
+    backdrop-filter: blur(12px);
+  }
+  .logo { font-size: 1rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .nav-right { display: flex; align-items: center; gap: 20px; }
+  .nav-right a { color: var(--muted); font-size: 0.82rem; text-decoration: none; transition: color 0.15s; }
+  .nav-right a:hover { color: var(--text); }
+  .btn-sm { background: var(--accent); color: white; padding: 8px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .btn-sm:hover { opacity: 0.85; }
+
+  /* Hero banner */
+  .hero-banner {
+    background: linear-gradient(135deg, rgba(129,140,248,0.06) 0%, rgba(52,211,153,0.04) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .hero-left h1 {
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .hero-left h1 span { color: var(--accent); }
+  .hero-left p { color: var(--muted); font-size: 0.9rem; max-width: 420px; line-height: 1.6; }
+  .hero-stat { text-align: center; padding: 0 24px; }
+  .hero-stat-num { font-size: 2.5rem; font-weight: 900; letter-spacing: -0.05em; }
+  .hero-stat-num.red { color: var(--red); }
+  .hero-stat-num.green { color: var(--green); }
+  .hero-stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  /* Scan bar in hero */
+  .hero-scan {
+    display: flex;
+    gap: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 340px;
+  }
+  .hero-scan input {
+    flex: 1; background: transparent; border: none; color: var(--text);
+    padding: 13px 16px; font-size: 0.85rem; outline: none; font-family: inherit;
+  }
+  .hero-scan input::placeholder { color: var(--muted); }
+  .hero-scan button {
+    background: var(--accent); color: white; border: none; padding: 13px 20px;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: inherit; transition: opacity 0.2s;
+  }
+  .hero-scan button:hover { opacity: 0.85; }
+
+  /* Main layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Cards feed */
+  .feed { padding: 24px 24px 24px 32px; }
+  .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .feed-title { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .sort-tabs { display: flex; gap: 4px; }
+  .sort-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .sort-tab.active { background: rgba(129,140,248,0.1); color: var(--accent); border-color: rgba(129,140,248,0.2); }
+  .sort-tab:hover { color: var(--text); }
+
+  /* Repo card */
+  .repo-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .repo-card:hover { border-color: rgba(129,140,248,0.3); transform: translateX(2px); }
+  .rc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .rc-avatar { width: 28px; height: 28px; border-radius: 6px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+  .rc-name { font-size: 0.9rem; font-weight: 700; }
+  .rc-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+  .rc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; color: var(--muted); }
+
+  /* Score reveal */
+  .rc-score-section { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 80px;
+  }
+  .score-number { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+  .score-grade { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+  .score-number.grade-a { color: var(--green); }
+  .score-number.grade-b { color: #86efac; }
+  .score-number.grade-c { color: var(--yellow); }
+  .score-number.grade-d { color: var(--orange); }
+  .score-number.grade-f { color: var(--red); }
+  .score-number.locked { color: transparent; background: rgba(248,113,113,0.3); border-radius: 4px; cursor: pointer; filter: blur(3px); }
+
+  .reveal-btn {
+    font-size: 0.7rem;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 5px 10px;
+    border: 1px solid rgba(129,140,248,0.2);
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .reveal-btn:hover { background: rgba(129,140,248,0.1); }
+  .trend-bar { height: 3px; width: 80px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .trend-fill { height: 100%; border-radius: 2px; }
+
+  /* Sidebar */
+  .sidebar { padding: 24px 32px 24px 0; border-left: 1px solid var(--border); margin-left: 24px; }
+
+  .sidebar-section { margin-bottom: 32px; }
+  .sidebar-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+
+  /* Grade distribution */
+  .grade-dist { display: flex; flex-direction: column; gap: 8px; }
+  .grade-row { display: flex; align-items: center; gap: 10px; }
+  .grade-label { font-size: 0.78rem; font-weight: 800; width: 16px; }
+  .grade-bar-outer { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .grade-bar-inner { height: 100%; border-radius: 3px; }
+  .grade-pct { font-size: 0.72rem; color: var(--muted); width: 32px; text-align: right; }
+
+  /* Trending */
+  .trend-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    cursor: pointer;
+  }
+  .trend-item:last-child { border-bottom: none; }
+  .trend-rank { font-size: 0.65rem; color: var(--muted); width: 20px; }
+  .trend-name { font-size: 0.82rem; flex: 1; }
+  .trend-score { font-size: 0.82rem; font-weight: 700; }
+
+  /* Alert */
+  .alert-item { padding: 10px 12px; border-left: 2px solid var(--red); margin-bottom: 8px; background: rgba(248,113,113,0.04); border-radius: 0 6px 6px 0; }
+  .alert-title { font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
+  .alert-desc { font-size: 0.7rem; color: var(--muted); }
+
+  /* CTA */
+  .cta-card { background: linear-gradient(135deg, rgba(129,140,248,0.08) 0%, rgba(52,211,153,0.06) 100%); border: 1px solid rgba(129,140,248,0.15); border-radius: 12px; padding: 24px; }
+  .cta-card h3 { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .cta-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+  .cta-card a { display: block; text-align: center; background: var(--accent); color: white; padding: 11px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: opacity 0.2s; }
+  .cta-card a:hover { opacity: 0.85; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 32px; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-left: none; margin-left: 0; border-top: 1px solid var(--border); padding: 24px 32px; }
+  }
+  @media (max-width: 600px) {
+    .hero-banner { flex-direction: column; }
+    .hero-scan { min-width: 0; width: 100%; }
+    .feed { padding: 16px; }
+    .repo-card { grid-template-columns: 1fr; }
+    .rc-score-section { flex-direction: row; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-right">
+    <a href="#">Browse</a>
+    <a href="#">Pricing</a>
+    <a href="#">ZaphNews</a>
+    <a href="#">Docs</a>
+    <a href="/onboard" class="btn-sm">Scan free →</a>
+  </div>
+</nav>
+
+<div class="hero-banner">
+  <div class="hero-left">
+    <h1>AI Agent Security<br><span>Marketplace</span></h1>
+    <p>Browse security scores for 1,200+ AI agent repos. Scan yours in 60 seconds.</p>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap">
+    <div class="hero-stat"><div class="hero-stat-num red">58%</div><div class="hero-stat-label">F-grade repos</div></div>
+    <div class="hero-stat"><div class="hero-stat-num green">12</div><div class="hero-stat-label">scan dimensions</div></div>
+    <div class="hero-stat"><div class="hero-stat-num" style="color:var(--accent)">200K</div><div class="hero-stat-label">repos at risk</div></div>
+  </div>
+  <div class="hero-scan">
+    <input type="url" placeholder="https://github.com/your-org/your-agent" id="heroInput">
+    <button onclick="scan()">Scan →</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="feed">
+    <div class="feed-header">
+      <div class="feed-title">1,247 repos scanned</div>
+      <div class="sort-tabs">
+        <button class="sort-tab active">Worst first</button>
+        <button class="sort-tab">Best first</button>
+        <button class="sort-tab">Trending</button>
+        <button class="sort-tab">Recent</button>
+      </div>
+    </div>
+
+    <!-- Repo cards -->
+    <div class="repo-card">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar">🤖</div>
+          <div class="rc-name">stanford-oval / storm</div>
+        </div>
+        <div class="rc-desc">Research agent that synthesizes Wikipedia-length articles. SSRF vector detected in web scraping module.</div>
+        <div class="rc-tags">
+          <span class="tag">Python</span><span class="tag">Research Agent</span><span class="tag">LLM</span>
+          <span class="tag" style="border-color:rgba(248,113,113,0.3);color:var(--red)">SSRF vector</span>
+        </div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card">
+          <div class="score-number grade-f">48.9</div>
+          <div class="score-grade">F — Critical</div>
+        </div>
+        <div class="trend-bar"><div class="trend-fill" style="width:49%;background:var(--red)"></div></div>
+      </div>
+    </div>
+
+    <div class="repo-card">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar">🔗</div>
+          <div class="rc-name">openai / swarm</div>
+        </div>
+        <div class="rc-desc">Lightweight multi-agent orchestration framework by OpenAI. Hardcoded API key found in example config.</div>
+        <div class="rc-tags">
+          <span class="tag">Python</span><span class="tag">Multi-agent</span>
+          <span class="tag" style="border-color:rgba(248,113,113,0.3);color:var(--red)">Hardcoded secret</span>
+        </div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card">
+          <div class="score-number grade-f">51.8</div>
+          <div class="score-grade">F — Critical</div>
+        </div>
+        <div class="trend-bar"><div class="trend-fill" style="width:52%;background:var(--red)"></div></div>
+      </div>
+    </div>
+
+    <div class="repo-card">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar">🧠</div>
+          <div class="rc-name">microsoft / autogen</div>
+        </div>
+        <div class="rc-desc">AutoGen multi-agent conversation framework. CVE-2024-5980 present in pyautogen ≤ 0.2.10.</div>
+        <div class="rc-tags">
+          <span class="tag">Python</span><span class="tag">AutoGen</span>
+          <span class="tag" style="border-color:rgba(251,146,60,0.3);color:var(--orange)">CVE-2024-5980</span>
+        </div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card">
+          <div class="score-number grade-d">64.1</div>
+          <div class="score-grade">D — Poor</div>
+        </div>
+        <div class="trend-bar"><div class="trend-fill" style="width:64%;background:var(--orange)"></div></div>
+      </div>
+    </div>
+
+    <div class="repo-card">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar">🔗</div>
+          <div class="rc-name">langchain-ai / langchain</div>
+        </div>
+        <div class="rc-desc">LLM application framework. 4 unconstrained tool calls in agent executor. eval() in Python REPL tool.</div>
+        <div class="rc-tags">
+          <span class="tag">Python</span><span class="tag">LangChain</span>
+          <span class="tag" style="border-color:rgba(251,146,60,0.3);color:var(--orange)">4 unconstrained tools</span>
+          <span class="tag" style="border-color:rgba(251,146,60,0.3);color:var(--orange)">eval() detected</span>
+        </div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card">
+          <div class="score-number grade-d">69.4</div>
+          <div class="score-grade">D — Poor</div>
+        </div>
+        <div class="trend-bar"><div class="trend-fill" style="width:69%;background:var(--orange)"></div></div>
+      </div>
+    </div>
+
+    <div class="repo-card">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar">👥</div>
+          <div class="rc-name">crewAI / crewAI</div>
+        </div>
+        <div class="rc-desc">Multi-agent orchestration framework. 2 prompt injection vectors in task execution chain. 3 medium CVEs in deps.</div>
+        <div class="rc-tags">
+          <span class="tag">Python</span><span class="tag">Multi-agent</span>
+          <span class="tag" style="border-color:rgba(251,191,36,0.3);color:var(--yellow)">2 injection vectors</span>
+        </div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card">
+          <div class="score-number grade-c">78.6</div>
+          <div class="score-grade">C — Fair</div>
+        </div>
+        <div class="trend-bar"><div class="trend-fill" style="width:79%;background:var(--yellow)"></div></div>
+      </div>
+    </div>
+
+    <div class="repo-card" style="border:1px dashed rgba(129,140,248,0.2); background: rgba(129,140,248,0.03);">
+      <div>
+        <div class="rc-header">
+          <div class="rc-avatar" style="border:1px dashed var(--border)">?</div>
+          <div class="rc-name" style="color:var(--muted)">your-org / your-agent</div>
+        </div>
+        <div class="rc-desc" style="color:var(--muted)">Scan your repo to see your score alongside the ecosystem. Find out if you're in the 42% or the 58%.</div>
+        <div class="rc-tags"><span class="tag">Your code</span><span class="tag">60-second scan</span><span class="tag">Free</span></div>
+      </div>
+      <div class="rc-score-section">
+        <div class="score-card" style="border-style:dashed; border-color:rgba(129,140,248,0.2)">
+          <div class="score-number locked" onclick="window.location='/onboard'">??.?</div>
+          <div class="score-grade">Scan to reveal</div>
+        </div>
+        <button class="reveal-btn" onclick="window.location='/onboard'">Scan free →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Grade Distribution</div>
+      <div class="grade-dist">
+        <div class="grade-row">
+          <div class="grade-label" style="color:var(--green)">A</div>
+          <div class="grade-bar-outer"><div class="grade-bar-inner" style="width:5%;background:var(--green)"></div></div>
+          <div class="grade-pct">5%</div>
+        </div>
+        <div class="grade-row">
+          <div class="grade-label" style="color:#86efac">B</div>
+          <div class="grade-bar-outer"><div class="grade-bar-inner" style="width:12%;background:#86efac"></div></div>
+          <div class="grade-pct">12%</div>
+        </div>
+        <div class="grade-row">
+          <div class="grade-label" style="color:var(--yellow)">C</div>
+          <div class="grade-bar-outer"><div class="grade-bar-inner" style="width:25%;background:var(--yellow)"></div></div>
+          <div class="grade-pct">25%</div>
+        </div>
+        <div class="grade-row">
+          <div class="grade-label" style="color:var(--orange)">D</div>
+          <div class="grade-bar-outer"><div class="grade-bar-inner" style="width:0%;background:var(--orange)" id="dBar"></div></div>
+          <div class="grade-pct">0%</div>
+        </div>
+        <div class="grade-row">
+          <div class="grade-label" style="color:var(--red)">F</div>
+          <div class="grade-bar-outer"><div class="grade-bar-inner" style="width:0%;background:var(--red)" id="fBar"></div></div>
+          <div class="grade-pct" id="fPct">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Trending Up</div>
+      <div class="trend-item">
+        <div class="trend-rank">↑1</div>
+        <div class="trend-name">pydantic/pydantic-ai</div>
+        <div class="trend-score" style="color:var(--green)">88.2 B</div>
+      </div>
+      <div class="trend-item">
+        <div class="trend-rank">↑2</div>
+        <div class="trend-name">anthropics/claude-agent</div>
+        <div class="trend-score" style="color:var(--green)">91.7 A</div>
+      </div>
+      <div class="trend-item">
+        <div class="trend-rank">→3</div>
+        <div class="trend-name">phidatahq/phidata</div>
+        <div class="trend-score" style="color:var(--yellow)">73.2 C</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">New Threats</div>
+      <div class="alert-item">
+        <div class="alert-title">CVE-2026-4821 — langchain 0.3.x</div>
+        <div class="alert-desc">SSRF in web_search tool. Patch: ≥ 0.3.12. CVSS 8.1</div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-title">Prompt injection via task metadata</div>
+        <div class="alert-desc">crewAI ≤ 0.80.0. No patch yet. Mitigate with input validation.</div>
+      </div>
+    </div>
+
+    <div class="cta-card">
+      <h3>Scan your repo</h3>
+      <p>3 free scans. Results in 60 seconds. See exactly where you stand.</p>
+      <a href="/onboard">Start free →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Zaphenath · ZaphScore</div>
+  <div>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</footer>
+
+<script>
+// Animate grade bars on load
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('dBar').style.cssText += 'width:0%;transition:width 1.5s ease 0.3s';
+    document.getElementById('fBar').style.cssText += 'width:0%;transition:width 1.5s ease 0.5s';
+    setTimeout(() => {
+      document.getElementById('dBar').style.width = '58%';
+      document.getElementById('fBar').style.width = '58%';
+      document.getElementById('fPct').textContent = '58%';
+    }, 600);
+  }, 200);
+});
+
+// Sort tabs
+document.querySelectorAll('.sort-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+function scan() {
+  const url = document.getElementById('heroInput').value.trim();
+  if (!url.includes('github.com/')) return;
+  window.location = '/onboard?repo=' + encodeURIComponent(url);
+}
+document.getElementById('heroInput').addEventListener('keydown', e => { if (e.key === 'Enter') scan(); });
+</script>
+</body>
+</html>

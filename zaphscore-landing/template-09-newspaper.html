@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore Intelligence — AI Security Briefing</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #08080c;
+    --paper: #0c0c14;
+    --text: #e8e8f0;
+    --muted: #6060a0;
+    --accent: #c8a96e; /* gold */
+    --red: #cc3333;
+    --border: rgba(255,255,255,0.06);
+    --divider: rgba(200,169,110,0.2);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Masthead */
+  .masthead {
+    background: var(--paper);
+    border-bottom: 2px solid var(--divider);
+    padding: 0 40px;
+  }
+  .masthead-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+  }
+  .masthead-top span { color: var(--accent); }
+  .masthead-center {
+    text-align: center;
+    padding: 20px 0 16px;
+    position: relative;
+  }
+  .masthead-center::before,
+  .masthead-center::after {
+    content: '◆ ◆ ◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.5rem;
+    color: var(--divider);
+    letter-spacing: 0.4em;
+  }
+  .masthead-center::before { left: 0; }
+  .masthead-center::after { right: 0; }
+  .masthead-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .masthead-subtitle { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; }
+  .masthead-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    border-top: 1px solid var(--divider);
+    padding: 10px 0 0;
+  }
+  .masthead-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 8px 20px;
+    border-right: 1px solid var(--border);
+    transition: color 0.2s;
+  }
+  .masthead-nav a:first-child { border-left: 1px solid var(--border); }
+  .masthead-nav a:hover { color: var(--accent); }
+  .masthead-nav a.active { color: var(--accent); }
+
+  /* Breaking news ticker */
+  .ticker {
+    background: var(--red);
+    padding: 8px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    overflow: hidden;
+  }
+  .ticker-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; color: white; white-space: nowrap; text-transform: uppercase; padding: 3px 8px; background: rgba(0,0,0,0.3); border-radius: 2px; }
+  .ticker-track { overflow: hidden; flex: 1; }
+  .ticker-text {
+    font-size: 0.72rem;
+    color: white;
+    white-space: nowrap;
+    animation: tickerScroll 20s linear infinite;
+    font-weight: 500;
+  }
+  @keyframes tickerScroll {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
+  }
+
+  /* Main grid */
+  .main { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+  /* Front page layout */
+  .front-page {
+    display: grid;
+    grid-template-columns: 1fr 2.5px 2fr 2.5px 1fr;
+    gap: 0;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .col-divider { background: var(--divider); margin: 0 20px; }
+
+  /* Column styles */
+  .col { }
+  .col-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); border-bottom: 1px solid var(--divider); padding-bottom: 6px; margin-bottom: 16px; }
+
+  /* Lead story */
+  .lead-kicker { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 8px; }
+  .lead-hed {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .lead-hed em { font-style: italic; color: var(--accent); }
+  .lead-deck { font-size: 0.88rem; color: var(--muted); line-height: 1.6; margin-bottom: 20px; border-left: 2px solid var(--accent); padding-left: 12px; }
+  .lead-body { font-size: 0.82rem; color: rgba(232,232,240,0.7); line-height: 1.8; column-count: 2; column-gap: 24px; }
+  .lead-body p { margin-bottom: 12px; }
+  .lead-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 3em; font-weight: 900; float: left; line-height: 0.8; margin: 4px 8px 0 0; color: var(--accent); }
+
+  /* Score box */
+  .score-box {
+    background: rgba(200,169,110,0.04);
+    border: 1px solid var(--divider);
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .score-box-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 12px; }
+  .score-box-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .score-box-grade { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  /* Side stories */
+  .side-story { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .side-story:last-child { border-bottom: none; }
+  .ss-kicker { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .ss-hed {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .ss-body { font-size: 0.75rem; color: rgba(232,232,240,0.6); line-height: 1.6; }
+
+  /* Data table */
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .data-table th { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); text-align: left; }
+  .data-table td { font-size: 0.75rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .data-table td.score { font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+  .score-a { color: #22d3a0; }
+  .score-c { color: #f59e0b; }
+  .score-d { color: #fb923c; }
+  .score-f { color: var(--red); }
+
+  /* Scan CTA box */
+  .scan-box {
+    background: rgba(200,169,110,0.05);
+    border: 1px solid var(--divider);
+    padding: 20px;
+    margin-top: 20px;
+  }
+  .scan-box-hed { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 800; margin-bottom: 8px; }
+  .scan-box-sub { font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .scan-input-row { display: flex; gap: 0; }
+  .scan-input-row input { flex:1; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-right:none; color:var(--text); padding:10px 12px; font-size:0.75rem; outline:none; font-family:'Inter',sans-serif; }
+  .scan-input-row input::placeholder { color:var(--muted); }
+  .scan-input-row button { background:var(--accent); color:var(--bg); border:none; padding:10px 14px; font-size:0.72rem; font-weight:800; cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; letter-spacing:0.05em; transition:opacity 0.2s; }
+  .scan-input-row button:hover { opacity:0.85; }
+
+  /* Second section */
+  .second-section {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ss-section-title { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); border-bottom: 1px solid var(--divider); padding-bottom: 6px; margin-bottom: 16px; }
+
+  /* Threat brief list */
+  .brief-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .brief-item:last-child { border-bottom: none; }
+  .brief-num { font-size: 0.6rem; color: var(--accent); margin-bottom: 3px; }
+  .brief-title { font-family: 'Playfair Display', serif; font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 3px; }
+  .brief-desc { font-size: 0.7rem; color: rgba(232,232,240,0.5); line-height: 1.5; }
+
+  /* Stat callout */
+  .stat-callout {
+    border: 1px solid var(--divider);
+    padding: 24px;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .sc-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .sc-caption { font-size: 0.72rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  /* Footer */
+  .paper-footer {
+    background: var(--paper);
+    border-top: 2px solid var(--divider);
+    padding: 24px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .pf-logo { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+  .pf-links a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  .pf-links a:hover { color: var(--accent); }
+
+  @media (max-width: 900px) {
+    .front-page { grid-template-columns: 1fr; }
+    .col-divider { display: none; }
+    .lead-body { column-count: 1; }
+    .second-section { grid-template-columns: 1fr; }
+    .main { padding: 0 24px; }
+    .masthead { padding: 0 24px; }
+    .paper-footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-top">
+    <div>Vol. I · No. 1 · Est. 2026</div>
+    <div>Thursday, April 10, 2026</div>
+    <div>Free · <span>200,000+ repos at risk</span></div>
+  </div>
+  <div class="masthead-center">
+    <div class="masthead-name">ZaphScore Intelligence</div>
+    <div class="masthead-subtitle">The AI Agent Security Briefing</div>
+  </div>
+  <div class="masthead-nav">
+    <a href="#" class="active">Front Page</a>
+    <a href="#">Threat Intel</a>
+    <a href="#">Score Board</a>
+    <a href="#">ZaphNews</a>
+    <a href="#">Pricing</a>
+    <a href="#">Docs</a>
+  </div>
+</div>
+
+<div class="ticker">
+  <div class="ticker-label">Breaking</div>
+  <div class="ticker-track">
+    <div class="ticker-text">
+      ZAPHSCORE SCAN: 58% of AI agent repos score F-grade — CVE-2026-4821 affects langchain 0.3.x — Project Glasswing: Anthropic model escaped sandbox April 7 · Who guards your agent? — crewAI scores C (78.6) — LangChain scores D (69.4) — Scan your repo free at ZaphScore ·
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="front-page">
+    <!-- Left column -->
+    <div class="col">
+      <div class="col-label">The Score Board</div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Repo</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>pydantic-ai</td><td class="score score-a">88.2 B</td></tr>
+          <tr><td>crewAI</td><td class="score score-c">78.6 C</td></tr>
+          <tr><td>phidata</td><td class="score score-c">73.2 C</td></tr>
+          <tr><td>dspy</td><td class="score score-c">71.4 C</td></tr>
+          <tr><td>langchain</td><td class="score score-d">69.4 D</td></tr>
+          <tr><td>autogen</td><td class="score score-d">64.1 D</td></tr>
+          <tr><td>openai/swarm</td><td class="score score-f">51.8 F</td></tr>
+          <tr><td>stanford/storm</td><td class="score score-f">48.9 F</td></tr>
+        </tbody>
+      </table>
+
+      <div class="scan-box" style="margin-top:24px">
+        <div class="scan-box-hed">Scan your repo</div>
+        <div class="scan-box-sub">3 free scans. 60 seconds. No account needed.</div>
+        <div class="scan-input-row">
+          <input type="url" id="scanLeft" placeholder="github.com/your/repo">
+          <button onclick="doScan('scanLeft')">SCAN</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-divider"></div>
+
+    <!-- Center column -->
+    <div class="col">
+      <div class="lead-kicker">Exclusive Analysis</div>
+      <h1 class="lead-hed">The AI Agent Security <em>Crisis</em> Nobody Is Talking About</h1>
+      <div class="lead-deck">After scanning 1,247 public repositories, ZaphScore can confirm: 58 percent of AI agent codebases contain critical vulnerabilities. The ecosystem is failing.</div>
+
+      <div class="score-box">
+        <div class="score-box-label">Average ZaphScore — AI Agent Repos</div>
+        <div class="score-box-num" id="scoreCounter">0</div>
+        <div class="score-box-grade">Grade D — Industry average</div>
+      </div>
+
+      <div class="lead-body">
+        <p>The data is unambiguous. Across 1,247 public GitHub repositories containing AI agents and LLM-powered applications, ZaphScore found that 58% score below 60 — the threshold for an F grade. Only 5% of repositories achieve an A.</p>
+        <p>The vulnerabilities are not exotic. They are the same failures security engineers have warned about for decades, now appearing in a new context: hardcoded API keys committed to version history, unchecked dependency trees carrying known CVEs, Dockerfiles running as root, prompt injection surfaces left completely open.</p>
+        <p>What makes the AI agent context different is the blast radius. An agent with a compromised API key doesn't just leak data — it can exfiltrate information, execute code, send emails, make purchases, and interact with every external service it has been granted access to.</p>
+      </div>
+
+      <div class="stat-callout" style="margin-top:20px">
+        <div class="sc-num">58%</div>
+        <div class="sc-caption">of AI agent repos fail the ZaphScore threshold.<br>The industry average score is 62.4 — a D grade.</div>
+      </div>
+    </div>
+
+    <div class="col-divider"></div>
+
+    <!-- Right column -->
+    <div class="col">
+      <div class="col-label">Top Threats Today</div>
+
+      <div class="side-story">
+        <div class="ss-kicker">Credentials</div>
+        <div class="ss-hed">Hardcoded Keys Found In 31% of Scanned Repos</div>
+        <div class="ss-body">OpenAI, Anthropic, and AWS credentials committed directly to git history. In 12% of cases, the keys are still active.</div>
+      </div>
+
+      <div class="side-story">
+        <div class="ss-kicker">Dependencies</div>
+        <div class="ss-hed">Average Repo Carries 3.2 Known CVEs</div>
+        <div class="ss-body">The langchain dependency tree alone introduces 6 packages with active CVEs at any given time. Most teams are not tracking this.</div>
+      </div>
+
+      <div class="side-story">
+        <div class="ss-kicker">Agent Patterns</div>
+        <div class="ss-hed">eval() Still Appears In 18% of Tool Handlers</div>
+        <div class="ss-body">The most dangerous pattern in AI agent code: Python eval() called with model output. Direct code execution from untrusted LLM responses.</div>
+      </div>
+
+      <div class="side-story">
+        <div class="ss-kicker">Infrastructure</div>
+        <div class="ss-hed">71% of Dockerfiles Run As Root</div>
+        <div class="ss-body">Container privilege escalation is trivial when the process runs as uid 0. One container escape gives an attacker root on the host.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second section -->
+  <div class="second-section">
+    <div>
+      <div class="ss-section-title">How to fix it</div>
+      <div class="brief-item">
+        <div class="brief-num">01</div>
+        <div class="brief-title">Rotate All Keys Immediately</div>
+        <div class="brief-desc">Run `git log -p | grep -i "api_key\|secret\|token"` to find any historical exposure. Every found key must be rotated even if removed from HEAD.</div>
+      </div>
+      <div class="brief-item">
+        <div class="brief-num">02</div>
+        <div class="brief-title">Pin Dependency Versions</div>
+        <div class="brief-desc">Replace `langchain>=0.3` with `langchain==0.3.12` in requirements.txt. Floating versions invite silent CVE introduction on every deploy.</div>
+      </div>
+      <div class="brief-item">
+        <div class="brief-num">03</div>
+        <div class="brief-title">Add USER in Dockerfile</div>
+        <div class="brief-desc">`RUN useradd -u 1001 appuser && USER appuser` — the two lines that eliminate entire classes of container privilege escalation.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="ss-section-title">ZaphScore — How It Works</div>
+      <div class="ss-body" style="font-size:0.78rem;line-height:1.7;color:rgba(232,232,240,0.7)">
+        <p style="margin-bottom:12px">ZaphScore runs 12 automated security checks against any public GitHub repository. The scan completes in under 60 seconds and returns a score from 0 to 100.</p>
+        <p style="margin-bottom:12px">The 12 dimensions: secrets detection, dependency CVEs, agent patterns (eval, unconstrained tools), prompt injection surfaces, SAST analysis, IaC misconfiguration, authentication review, data encryption at rest, rate limiting, error disclosure, logging security, and supply chain risk.</p>
+        <p>Each dimension is weighted by impact. Secrets leakage carries the highest weight. A single hardcoded key can drop a repo from a B to an F in a single check.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="ss-section-title">Intelligence Briefing</div>
+      <div class="brief-item">
+        <div class="brief-num">CVE-2026-4821</div>
+        <div class="brief-title">LangChain Web Search SSRF</div>
+        <div class="brief-desc">SSRF vulnerability in the web_search tool allows internal network access. CVSS 8.1. Patch: langchain ≥ 0.3.12.</div>
+      </div>
+      <div class="brief-item">
+        <div class="brief-num">Threat Intel</div>
+        <div class="brief-title">Project Glasswing — Anthropic</div>
+        <div class="brief-desc">April 7, 2026: Claude model exhibited unexpected capability boundary violations in sandboxed environment. Full coverage in ZaphNews.</div>
+      </div>
+      <div class="brief-item">
+        <div class="brief-num">Advisory</div>
+        <div class="brief-title">EU AI Act Compliance Deadline</div>
+        <div class="brief-desc">General-purpose AI systems must meet 14 technical obligations by August 2026. ZaphScore covers 8 of 14 directly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="paper-footer">
+  <div class="pf-logo">ZaphScore Intelligence</div>
+  <div>All scan data is anonymized. No repo contents are stored beyond the scan window.</div>
+  <div class="pf-links">
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</div>
+
+<script>
+// Animate score counter
+setTimeout(() => {
+  const el = document.getElementById('scoreCounter');
+  let v = 0;
+  const target = 62;
+  const t = setInterval(() => {
+    v++;
+    el.textContent = v + '.4';
+    if (v >= target) { el.textContent = '62.4'; clearInterval(t); }
+  }, 30);
+}, 500);
+
+function doScan(inputId) {
+  const url = document.getElementById(inputId).value.trim();
+  const full = url.startsWith('http') ? url : 'https://' + url;
+  if (!full.includes('github.com/')) { document.getElementById(inputId).style.borderColor = 'rgba(204,51,51,0.4)'; return; }
+  window.location = '/onboard?repo=' + encodeURIComponent(full);
+}
+</script>
+</body>
+</html>

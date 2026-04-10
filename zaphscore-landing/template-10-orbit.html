@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZaphScore — AI Agent Security Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #020208;
+    --text: #f0f0fa;
+    --muted: #4040a0;
+    --accent: #818cf8;
+    --green: #22d3a0;
+    --yellow: #f59e0b;
+    --orange: #fb923c;
+    --red: #ef4444;
+    --border: rgba(129,140,248,0.08);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Star field */
+  #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  /* Nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    padding: 18px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(2,2,8,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(129,140,248,0.06);
+  }
+  .logo { font-size: 1rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { color: var(--muted); font-size: 0.82rem; text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: var(--bg); padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 800; text-decoration: none; transition: opacity 0.2s; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* Hero */
+  .hero {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 48px;
+    gap: 80px;
+  }
+
+  /* Left: text */
+  .hero-left { max-width: 440px; }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: rgba(129,140,248,0.08);
+    border: 1px solid rgba(129,140,248,0.15);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: dp 2s ease infinite; }
+  @keyframes dp { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  .hero-h1 {
+    font-size: clamp(2.5rem, 4.5vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+  .hero-h1 em { color: var(--accent); font-style: normal; }
+  .hero-sub { font-size: 1rem; color: var(--muted); line-height: 1.7; margin-bottom: 36px; }
+
+  /* Scan input */
+  .scan-bar { display: flex; gap: 0; border-radius: 10px; overflow: hidden; border: 1px solid rgba(129,140,248,0.15); background: rgba(10,10,30,0.6); }
+  .scan-bar input { flex:1; background:transparent; border:none; color:var(--text); padding:14px 16px; font-size:0.88rem; outline:none; font-family:inherit; }
+  .scan-bar input::placeholder { color:var(--muted); }
+  .scan-bar button { background:var(--accent); color:var(--bg); border:none; padding:14px 22px; font-size:0.85rem; font-weight:800; cursor:pointer; font-family:inherit; transition:opacity 0.2s; white-space:nowrap; }
+  .scan-bar button:hover { opacity:0.88; }
+  .scan-note { font-size:0.72rem; color:var(--muted); margin-top:10px; }
+
+  /* Selected planet info */
+  .selected-planet {
+    margin-top: 36px;
+    padding: 20px;
+    background: rgba(129,140,248,0.04);
+    border: 1px solid rgba(129,140,248,0.1);
+    border-radius: 12px;
+    display: none;
+  }
+  .selected-planet.visible { display: block; }
+  .sp-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .sp-name { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .sp-score { font-size: 2rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+  .sp-desc { font-size: 0.75rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  /* Right: orbit canvas */
+  .orbit-container {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    flex-shrink: 0;
+  }
+  #orbitCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; }
+
+  /* Legend */
+  .orbit-legend {
+    position: absolute;
+    bottom: -40px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Below fold */
+  .below { position: relative; z-index: 1; max-width: 1000px; margin: 100px auto 0; padding: 0 48px 80px; }
+  .below-title { font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 900; letter-spacing: -0.04em; text-align: center; margin-bottom: 12px; }
+  .below-sub { font-size: 0.95rem; color: var(--muted); text-align: center; max-width: 480px; margin: 0 auto 56px; line-height: 1.6; }
+
+  .feature-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 64px; }
+  .feat { background: rgba(129,140,248,0.03); border: 1px solid rgba(129,140,248,0.08); border-radius: 16px; padding: 24px; }
+  .feat-emoji { font-size: 1.5rem; margin-bottom: 12px; }
+  .feat-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .feat-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+  /* Stats */
+  .stats-row { display: flex; justify-content: center; gap: 64px; padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: center; margin-bottom: 64px; flex-wrap: wrap; }
+  .stat-num { font-size: 2.8rem; font-weight: 900; letter-spacing: -0.05em; color: var(--accent); }
+  .stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Final CTA */
+  .final { text-align: center; }
+  .final h2 { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; letter-spacing: -0.05em; margin-bottom: 12px; }
+  .final h2 em { color: var(--accent); font-style: normal; }
+  .final p { color: var(--muted); margin-bottom: 28px; }
+  .final .scan-bar { max-width: 480px; margin: 0 auto; }
+
+  footer { position: relative; z-index: 1; padding: 28px 48px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .hero { flex-direction: column; padding: 80px 24px 60px; gap: 48px; }
+    .orbit-container { width: 320px; height: 320px; }
+    .feature-row { grid-template-columns: 1fr; }
+    .stats-row { gap: 40px; }
+    .below { padding: 0 24px 60px; }
+    footer { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<nav>
+  <div class="logo">ZaphScore</div>
+  <div class="nav-links">
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+    <a href="#">ZaphNews</a>
+    <a href="#">Badge</a>
+  </div>
+  <a href="/onboard" class="nav-cta">Scan free →</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow"><div class="dot"></div>AI Agent Security Scanner</div>
+    <h1 class="hero-h1">Every agent<br>has a <em>gravity.</em><br>Know yours.</h1>
+    <p class="hero-sub">ZaphScore maps the security posture of AI agent repos like planets in an ecosystem. Size = score. Color = grade. Click any orbit to see where you stand.</p>
+
+    <div class="scan-bar">
+      <input type="url" id="scanInput" placeholder="https://github.com/your-org/your-agent">
+      <button onclick="doScan()">Scan free →</button>
+    </div>
+    <div class="scan-note">3 free scans · no credit card · 60 seconds</div>
+
+    <div class="selected-planet" id="selectedPlanet">
+      <div class="sp-label">Selected orbit</div>
+      <div class="sp-name" id="spName">—</div>
+      <div class="sp-score" id="spScore">—</div>
+      <div class="sp-desc" id="spDesc">—</div>
+    </div>
+  </div>
+
+  <div class="orbit-container">
+    <canvas id="orbitCanvas" width="500" height="500"></canvas>
+    <div class="orbit-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#22d3a0"></div>A (secure)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>C (fair)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div>D (poor)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>F (critical)</div>
+    </div>
+  </div>
+</section>
+
+<div class="below">
+  <div class="stats-row">
+    <div><div class="stat-num">58%</div><div class="stat-label">F-grade repos</div></div>
+    <div><div class="stat-num">12</div><div class="stat-label">scan dimensions</div></div>
+    <div><div class="stat-num">200K</div><div class="stat-label">repos at risk</div></div>
+    <div><div class="stat-num">60s</div><div class="stat-label">to your score</div></div>
+  </div>
+
+  <h2 class="below-title">What we find in the orbit</h2>
+  <p class="below-sub">12 security dimensions. Every check is specific to how AI agents fail.</p>
+
+  <div class="feature-row">
+    <div class="feat">
+      <div class="feat-emoji">🔐</div>
+      <div class="feat-title">Secrets Leakage</div>
+      <div class="feat-desc">API keys and tokens across 200+ detection patterns. The #1 cause of F-grade scores.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-emoji">🤖</div>
+      <div class="feat-title">Agent Attack Surface</div>
+      <div class="feat-desc">eval() in tool handlers, prompt injection vectors, unconstrained tool calls — unique to AI agents.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-emoji">📦</div>
+      <div class="feat-title">Supply Chain</div>
+      <div class="feat-desc">Every dependency cross-referenced against the CVE database. Know before your users do.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-emoji">🏗️</div>
+      <div class="feat-title">IaC Misconfigs</div>
+      <div class="feat-desc">Dockerfile, Kubernetes, Terraform. Container breakouts and IAM escalation paths.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-emoji">📊</div>
+      <div class="feat-title">SAST Analysis</div>
+      <div class="feat-desc">Static analysis with taint tracking. SQL injection, SSRF, command injection — traced from source to sink.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-emoji">📄</div>
+      <div class="feat-title">PDF Report</div>
+      <div class="feat-desc">Board-ready export with risk heat map and remediation roadmap. Pro tier.</div>
+    </div>
+  </div>
+
+  <div class="final">
+    <h2>Enter the orbit.<br><em>Know your score.</em></h2>
+    <p>3 free scans. First result in 60 seconds.</p>
+    <div class="scan-bar">
+      <input type="url" id="finalInput" placeholder="https://github.com/your-org/your-agent">
+      <button onclick="window.location='/onboard'">Start free →</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Zaphenath · ZaphScore</div>
+  <div>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/zaphnews">ZaphNews</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</footer>
+
+<script>
+// Star field
+(function() {
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const stars = Array.from({length:200}, () => ({
+    x: Math.random()*c.width, y: Math.random()*c.height,
+    r: Math.random()*1.2+0.2, a: Math.random()*0.6+0.1,
+    twinkle: Math.random()*Math.PI*2
+  }));
+  function drawStars() {
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s => {
+      s.twinkle += 0.01;
+      const a = s.a * (0.6 + 0.4 * Math.sin(s.twinkle));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(200,200,255,${a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+  window.addEventListener('resize', () => { c.width = window.innerWidth; c.height = window.innerHeight; });
+})();
+
+// Orbit system
+(function() {
+  const canvas = document.getElementById('orbitCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+
+  const repos = [
+    {name:'crewAI', score:78.6, orbit:160, speed:0.006, angle:0, desc:'Multi-agent orchestration · 2 prompt injection vectors found'},
+    {name:'LangChain', score:69.4, orbit:200, speed:0.004, angle:1.2, desc:'LLM framework · eval() in Python REPL tool · 4 unscoped tools'},
+    {name:'AutoGen', score:64.1, orbit:130, speed:0.008, angle:2.4, desc:'Conversation framework · CVE-2024-5980 in pyautogen ≤ 0.2.10'},
+    {name:'storm', score:48.9, orbit:220, speed:0.003, angle:0.7, desc:'Research agent · SSRF vector in web scraper · F-grade'},
+    {name:'swarm', score:51.8, orbit:100, speed:0.01, angle:3.5, desc:'Lightweight orchestration · Hardcoded API key in example config'},
+    {name:'pydantic-ai', score:88.2, orbit:170, speed:0.005, angle:4.2, desc:'Type-safe agent builder · Strong security posture · Grade B'},
+    {name:'phidata', score:73.2, orbit:240, speed:0.002, angle:1.8, desc:'Agent builder · 3 CVEs in dependencies · Grade C'},
+    {name:'Your repo', score:null, orbit:185, speed:0.0035, angle:5.0, desc:'Scan your repo to reveal your orbital position', locked:true},
+  ];
+
+  function gradeColor(s) {
+    if (!s) return 'rgba(129,140,248,0.5)';
+    if (s >= 90) return '#22d3a0';
+    if (s >= 80) return '#86efac';
+    if (s >= 70) return '#f59e0b';
+    if (s >= 60) return '#fb923c';
+    return '#ef4444';
+  }
+
+  function planetSize(s) {
+    if (!s) return 10;
+    return 6 + (s/100)*18;
+  }
+
+  let hoveredPlanet = null;
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+
+    // Center sun (ZaphScore hub)
+    const sunGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+    sunGrad.addColorStop(0, 'rgba(129,140,248,0.8)');
+    sunGrad.addColorStop(1, 'rgba(129,140,248,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30, 0, Math.PI*2);
+    ctx.fillStyle = sunGrad;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(129,140,248,0.9)';
+    ctx.fill();
+    ctx.font = '600 7px Inter';
+    ctx.fillStyle = 'rgba(2,2,8,0.9)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ZAPH', cx, cy-3);
+    ctx.fillText('SCORE', cx, cy+5);
+
+    // Orbits and planets
+    repos.forEach(r => {
+      r.angle += r.speed;
+      const px = cx + Math.cos(r.angle) * r.orbit;
+      const py = cy + Math.sin(r.angle) * r.orbit;
+      r._px = px; r._py = py;
+
+      // Orbit ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r.orbit, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(129,140,248,0.05)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Planet
+      const size = planetSize(r.score);
+      const color = gradeColor(r.score);
+
+      // Glow
+      if (hoveredPlanet === r) {
+        const glow = ctx.createRadialGradient(px, py, 0, px, py, size*2.5);
+        glow.addColorStop(0, color.replace(')', ',0.2)').replace('rgb(', 'rgba('));
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.arc(px, py, size*2.5, 0, Math.PI*2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+
+      // Planet body
+      const planetGrad = ctx.createRadialGradient(px-size*0.3, py-size*0.3, 0, px, py, size);
+      planetGrad.addColorStop(0, color);
+      planetGrad.addColorStop(1, color.replace(')', ',0.5)').replace('#', 'rgba(0,0,0,0.3)'));
+
+      ctx.beginPath();
+      ctx.arc(px, py, r.locked ? size : size, 0, Math.PI*2);
+      if (r.locked) {
+        ctx.strokeStyle = 'rgba(129,140,248,0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4,4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      // Label
+      if (r.name && (hoveredPlanet === r || size > 12)) {
+        ctx.font = `600 ${Math.min(size*0.7, 9)}px Inter`;
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const label = r.locked ? '?' : r.score ? r.score.toFixed(0) : '?';
+        ctx.fillText(label, px, py);
+      }
+
+      // Name tag on hover
+      if (hoveredPlanet === r) {
+        ctx.font = '600 10px Inter';
+        ctx.fillStyle = '#f0f0fa';
+        ctx.textAlign = 'center';
+        ctx.fillText(r.name, px, py - size - 8);
+      }
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Hover detection
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+    hoveredPlanet = null;
+    repos.forEach(r => {
+      if (!r._px) return;
+      const dist = Math.sqrt((mx-r._px)**2 + (my-r._py)**2);
+      if (dist < planetSize(r.score)+8) hoveredPlanet = r;
+    });
+    canvas.style.cursor = hoveredPlanet ? 'pointer' : 'default';
+  });
+
+  canvas.addEventListener('click', e => {
+    if (!hoveredPlanet) return;
+    const r = hoveredPlanet;
+    if (r.locked) { window.location = '/onboard'; return; }
+    const panel = document.getElementById('selectedPlanet');
+    const color = gradeColor(r.score);
+    document.getElementById('spName').textContent = r.name;
+    document.getElementById('spScore').textContent = r.score.toFixed(1);
+    document.getElementById('spScore').style.color = color;
+    document.getElementById('spDesc').textContent = r.desc;
+    panel.classList.add('visible');
+  });
+})();
+
+function doScan() {
+  const url = document.getElementById('scanInput').value.trim();
+  if (!url.includes('github.com/')) {
+    document.getElementById('scanInput').style.borderColor = 'rgba(239,68,68,0.4)';
+    return;
+  }
+  window.location = '/onboard?repo=' + encodeURIComponent(url);
+}
+document.getElementById('scanInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doScan();
+  document.getElementById('scanInput').style.borderColor = '';
+});
+</script>
+</body>
+</html>
