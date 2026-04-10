@@ -2293,20 +2293,22 @@
     {
       "id": "D-853",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD sync: no scheduled NVD sync job -- we query NVD per-scan hitting rate limits",
-      "note": "nvd_scanner.py queries the NVD 2.0 API in real-time per scan. Snyk and Dependabot maintain a local mirror of NVD updated every 2 hours; real-time queries hit NVD rate limits (5 req/30s without API key) and fail silently, leaving findings unenriched."
+      "note": "nvd_scanner.py queries the NVD 2.0 API in real-time per scan. Snyk and Dependabot maintain a local mirror of NVD updated every 2 hours; real-time queries hit NVD rate limits (5 req/30s without API key) and fail silently, leaving findings unenriched.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-854",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD sync: _CVE_CACHE is process-lifetime only -- cold starts lose all cached enrichment causing latency spikes",
-      "note": "_CVE_CACHE in vuln_scanner.py is a module-level dict with process-lifetime TTL. Worker restarts (Kubernetes pod recycling, Railway dyno restarts) clear the cache; the first scan after a restart re-fetches all CVE details from OSV and NVD, causing scan latency spikes and NVD rate limit hits."
+      "note": "_CVE_CACHE in vuln_scanner.py is a module-level dict with process-lifetime TTL. Worker restarts (Kubernetes pod recycling, Railway dyno restarts) clear the cache; the first scan after a restart re-fetches all CVE details from OSV and NVD, causing scan latency spikes and NVD rate limit hits.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-855",
@@ -2320,29 +2322,32 @@
     {
       "id": "D-856",
       "tier": "P0",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD CVE enrichment: no CVSS v4.0 support -- NVD publishing v4.0 scores since 2024",
-      "note": "_extract_cvss31() in nvd_scanner.py tries cvssMetricV31 then cvssMetricV30 only. NVD began publishing CVSS v4.0 (cvssMetricV40) in late 2024; new CVEs may have v4.0 as primary score with no v3.x fallback, causing nvd_score to return None and leaving findings unscored."
+      "note": "_extract_cvss31() in nvd_scanner.py tries cvssMetricV31 then cvssMetricV30 only. NVD began publishing CVSS v4.0 (cvssMetricV40) in late 2024; new CVEs may have v4.0 as primary score with no v3.x fallback, causing nvd_score to return None and leaving findings unscored.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-857",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD enrichment: no CISA KEV integration -- KEV catalog critical for exploit prioritisation",
-      "note": "CISA publishes the Known Exploited Vulnerabilities catalog daily with CVEs under active exploitation. nvd_scanner.py enriches with CVSS score and CWE only; no CISA KEV API call, no kev_in_catalog flag on findings. Snyk and Semgrep both surface KEV status prominently."
+      "note": "CISA publishes the Known Exploited Vulnerabilities catalog daily with CVEs under active exploitation. nvd_scanner.py enriches with CVSS score and CWE only; no CISA KEV API call, no kev_in_catalog flag on findings. Snyk and Semgrep both surface KEV status prominently.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-858",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD enrichment: _extract_references caps at 10 URLs -- advisory references beyond 10 silently dropped",
-      "note": "_extract_references() returns refs[:10]. NVD CVEs for major vulnerabilities (Log4Shell, Spring4Shell) have 40+ references including vendor patches and PoC links. Truncating to 10 may drop the most important vendor patch link if it appears later in the NVD reference list."
+      "note": "_extract_references() returns refs[:10]. NVD CVEs for major vulnerabilities (Log4Shell, Spring4Shell) have 40+ references including vendor patches and PoC links. Truncating to 10 may drop the most important vendor patch link if it appears later in the NVD reference list.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-859",
@@ -2374,11 +2379,12 @@
     {
       "id": "D-862",
       "tier": "P1",
-      "agent": "andrej",
-      "status": "open",
+      "agent": "war4",
+      "status": "done",
       "file": "app/engine/nvd_scanner.py",
       "title": "NVD rate limit: no API key rotation pool -- single key shared across all concurrent scans hits 50 req/30s limit",
-      "note": "_CONCURRENCY is set to 50 based on NVD_API_KEY presence with no API key rotation. A burst of 10 simultaneous scans each fetching 20 CVEs hits 200 NVD requests in less than 30s, triggering 403s that fail silently and leave findings unenriched."
+      "note": "_CONCURRENCY is set to 50 based on NVD_API_KEY presence with no API key rotation. A burst of 10 simultaneous scans each fetching 20 CVEs hits 200 NVD requests in less than 30s, triggering 403s that fail silently and leave findings unenriched.",
+      "fixed_at": "2026-04-10"
     },
     {
       "id": "D-863",
