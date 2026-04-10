@@ -483,8 +483,8 @@
       "tier": "P5",
       "title": "Changelog / Release Notes",
       "agent": "elena",
-      "status": "pending",
-      "fixed_at": null,
+      "status": "done",
+      "fixed_at": "2026-04-10T06:42:32Z",
       "file": "zaphscore-landing/changelog.html",
       "note": "No changelog. Users don't know what improved. Snyk publishes release notes. We need this."
     },
