@@ -65,6 +65,8 @@ from app.engine.scorer import calculate_score
 from app.engine.jwt_scanner import scan_jwt_issues
 from app.engine.deserialization_scanner import scan_deserialization
 from app.engine.ssrf_scanner import scan_ssrf
+from app.engine.access_control_scanner import scan_access_control
+from app.engine.config_scanner import scan_config_files
 
 logger = logging.getLogger(__name__)
 
@@ -300,6 +302,46 @@ async def run_scan(
             logger.error("[%s] SSRF scan failed: %s", scan_id, exc, exc_info=True)
             phases_failed.append("ssrf_scan")
             warnings.append(f"SSRF scan failed: {exc}")
+        # Phase 4a: Access Control scan (EX-01/CWE-285 � WAR-FLIGHT-A fix)
+        # ------------------------------------------------------------------
+        await _notify(progress_callback, ScanPhase.sast_scan, 61, "Scanning access control...")
+        logger.info("[%s] Phase 4a: Access control scan", scan_id)
+
+        try:
+            ac_findings = await asyncio.get_event_loop().run_in_executor(
+                None, scan_access_control, repo_dir
+            )
+            all_findings.extend(ac_findings)
+            phases_completed.append("access_control_scan")
+            await _notify(
+                progress_callback, ScanPhase.sast_scan, 61,
+                f"Found {len(ac_findings)} access control issues",
+            )
+        except Exception as exc:
+            logger.error("[%s] Access control scan failed: %s", scan_id, exc, exc_info=True)
+            phases_failed.append("access_control_scan")
+            warnings.append(f"Access control scan failed: {exc}")
+
+        # ------------------------------------------------------------------
+        # Phase 4b: Config misconfiguration scan (EX-05/CWE-16 � WAR-FLIGHT-A fix)
+        # ------------------------------------------------------------------
+        await _notify(progress_callback, ScanPhase.sast_scan, 61, "Scanning config files...")
+        logger.info("[%s] Phase 4b: Config misconfiguration scan", scan_id)
+
+        try:
+            cfg_findings = await asyncio.get_event_loop().run_in_executor(
+                None, scan_config_files, repo_dir
+            )
+            all_findings.extend(cfg_findings)
+            phases_completed.append("config_scan")
+            await _notify(
+                progress_callback, ScanPhase.sast_scan, 62,
+                f"Found {len(cfg_findings)} config misconfigurations",
+            )
+        except Exception as exc:
+            logger.error("[%s] Config scan failed: %s", scan_id, exc, exc_info=True)
+            phases_failed.append("config_scan")
+            warnings.append(f"Config scan failed: {exc}")
 
         # ------------------------------------------------------------------
         # Phase 5: Secret detection (TruffleHog)
